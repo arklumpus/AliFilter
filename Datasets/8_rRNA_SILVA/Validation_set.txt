@@ -1,0 +1,14 @@
+Hadarchaeota_ssu_200
+Nitrospirota_ssu_200
+Desulfurococcales_ssu_200
+Choanoflagellida_ssu_200
+Methanococcales_lsu_23
+Methanobacteriales_lsu_54
+Euryarchaeota_ssu_1993
+Halobacterales_ssu_2000
+Araneae_lsu_79
+Desulfobacterota_lsu_200
+Campylobacteria_lsu_500
+Lactobacillales_lsu_2000
+Basidiomycota_lsu_200
+Arthropoda_lsu_2000

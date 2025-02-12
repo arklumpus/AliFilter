@@ -1,0 +1,10 @@
+.vs/
+src/Release
+bin/
+obj/
+*.user
+__pycache__/
+.Rhistory
+*.o
+*.dll
+API/C/example

@@ -1,0 +1,207 @@
+<!--
+    AliFilter: A Machine Learning Approach to Alignment Filtering
+
+    by Giorgio Bianchini, Rui Zhu, Francesco Cicconardi, Edmund RR Moody
+
+    Copyright (C) 2024  Giorgio Bianchini
+ 
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, version 3.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<html>
+    <head>
+        <title>AliFilter JavaScript + HTML example</title>
+        <style>
+            span.ok
+            {
+                margin: 5px;
+                color: #009E73;
+            }
+            
+            span.error
+            {
+                margin: 5px;
+                color: #D55E00;
+            }
+            
+            span.warning
+            {
+                margin: 5px;
+                color: #E69F00;
+            }
+
+            p:has(> code)
+            {
+                background: #E0E0E0;
+                padding: 5px;
+                word-wrap: break-word;
+            }
+        </style>
+        <script src="alifilter.js"></script>
+
+        <script>
+            "use strict";
+
+            let loadedModel;
+            let loadedAlignment;
+            
+            // Load the AliFilter model from a file.
+            function modelFileChanged(sender)
+            {
+                document.getElementById("modelStatus").innerHTML = "No model loaded";
+                document.getElementById("modelStatus").className = "error";
+
+                // Use a FileReader to read the file contents.
+                let reader = new FileReader();
+                reader.onload = function (e)
+                {
+                    try
+                    {
+                        let modelJson = e.target.result;
+                        loadedModel = aliFilter.loadModelFromJSON(modelJson);
+
+                        if (loadedModel.Validated)
+                        {
+                            document.getElementById("modelStatus").innerHTML = "Validated model loaded";
+                            document.getElementById("modelStatus").className = "ok";
+                        }
+                        else
+                        {
+                            document.getElementById("modelStatus").innerHTML = "Unvalidated model loaded";
+                            document.getElementById("modelStatus").className = "warning";
+                        }
+                    }
+                    catch (error)
+                    {
+                        document.getElementById("modelStatus").innerHTML = "An error occurred while loading the model: " + error.toString();
+                        document.getElementById("modelStatus").className = "error";
+                    }
+                };
+                reader.readAsText(sender.files[0]);
+            }
+
+            // Load an alignment in PHYLIP format from a file.
+            function alignmentFileChanged(sender)
+            {
+                document.getElementById("alignmentStatus").innerHTML = "No alignment loaded";
+                document.getElementById("alignmentStatus").className = "error";
+
+                // Use a FileReader to read the file contents.
+                let reader = new FileReader();
+                reader.onload = function (e)
+                {
+                    try
+                    {
+                        let hasWarnings = false;
+                        let fileContent = e.target.result;
+
+                        let lines = fileContent.replaceAll("\r", "\n").replaceAll("\n\n", "\n").split("\n");
+                        while (lines[lines.length - 1].length == 0)
+                        {
+                            lines.splice(lines.length - 1, 1);
+                        }
+
+                        let rx = /^ *([^ ]*) *([^ ]*) *$/;
+                        let mch = lines[0].match(rx);
+                        
+                        let seqNum = parseInt(mch[1]);
+                        let seqLen = parseInt(mch[2]); 
+                        
+                        loadedAlignment = new Array(seqNum);
+                        
+                        let i;
+                        for (i = 1; i < lines.length; i++)
+                        {
+                            let splitLine = lines[i].match(rx);
+                            loadedAlignment[i - 1] = splitLine[2];
+                            if (splitLine[2].length != seqLen)
+                            {
+                                throw new Error("Sequence " + splitLine[1] + " has the wrong length (" + splitLine[2].length + " instead of " + seqLen + ")");
+                            }
+                        }
+                        
+                        if (i != seqNum + 1)
+                        {
+                            console.warn("Wrong number of sequences (" + (i - 1) + " instead of " + seqNum + ")");
+                            hasWarnings = true;
+                        }
+
+                        document.getElementById("alignmentStatus").innerHTML = "Alignment loaded: " + seqNum + " sequences, " + seqLen + " residues";
+
+                        if (!hasWarnings)
+                        {
+                            document.getElementById("alignmentStatus").className = "ok";
+                        }
+                        else
+                        {
+                            document.getElementById("alignmentStatus").className = "warning";
+                        }
+                    }
+                    catch (error)
+                    {
+                        document.getElementById("alignmentStatus").innerHTML = "An error occurred while loading the alignment: " + error.toString();
+                        document.getElementById("alignmentStatus").className = "error";
+                    }
+                };
+                reader.readAsText(sender.files[0]);
+            }
+
+            function createMask()
+            {
+                if (loadedModel && loadedAlignment)
+                {
+                    try
+                    {
+                        let mask = loadedModel.getMask(loadedAlignment);
+                        document.getElementById("maskContainer").innerHTML = mask;
+                        document.getElementById("maskStatus").innerHTML = "";
+                    }
+                    catch (Error)
+                    {
+                        document.getElementById("maskStatus").innerHTML = "An error occurred while computing the mask: " + error.toString();
+                        document.getElementById("maskStatus").className = "error";
+                    }
+                }
+                else
+                {
+                    document.getElementById("maskStatus").innerHTML = "Both a model and an alignment need to be loaded before computing the mask.";
+                    document.getElementById("maskStatus").className = "error";
+                }
+            }
+
+        </script>
+    </head>
+    <body>
+        <h1>AliFilter JavaScript + HTML example</h1>
+        <form>
+            <p>
+                <label for="modelFile">AliFilter model file:</label>
+                <input type="file" id="modelFile" name="modelFile" onchange="modelFileChanged(this)"></input> 
+                <span id="modelStatus" class="error">No model loaded</span>
+            </p>
+            <p>
+                <label for="alignmentFile">Alignment file (PHYLIP format):</label>
+                <input type="file" id="alignmentFile" name="alignmentFile" onchange="alignmentFileChanged(this)"></input>
+                <span id="alignmentStatus" class="error">No alignment loaded</span>
+            </p>
+            <p>
+                <input type="button" value="Create alignment mask" onclick="createMask()"></input>
+            </p>
+            <p>
+                <code id="maskContainer">
+                </code>
+                <span id="maskStatus"></span>
+            </p>
+        </form>
+    </body>
+</html>

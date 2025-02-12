@@ -1,0 +1,14 @@
+Gemmatimonadota_ssu_200
+Gemmatales_ssu_500
+Chytridiomycota_ssu_200
+Fusobacteriia_lsu_93
+Methanosarcinia_lsu_61
+Euryarchaeota_lsu_126
+Protalveolata_ssu_2000
+Kinetoplastea_ssu_500
+Spirochaetota_lsu_200
+Halobacteria_lsu_180
+Halobacterota_lsu_296
+Alphaproteobacteria_ssu_2000
+Platyhelminthes_ssu_1993
+Embryophyta_lsu_200

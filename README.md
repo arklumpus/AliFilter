@@ -2,7 +2,7 @@
 
 <img src="AliFilter_banner.svg" height=200 align="right" />
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14861813.svg)](https://doi.org/10.5281/zenodo.14861813)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14861812.svg)](https://doi.org/10.5281/zenodo.14861812)
 
 Sequence alignment filtering (or "trimming") consists in removing parts of a DNA or protein alignment to improve the performance of a downstream analysis (such as a phylogenetic reconstruction). Alignment columns are removed because they are deemed to be unsuitable for the analysis, e.g. because they are likely to be the result of mistakes introduced by the sequence alignment software, because they contain no information, or because they contain a high amount of noise.
 

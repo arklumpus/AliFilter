@@ -58,13 +58,21 @@ If you wish to build AliFilter from source, you will need to install the [.NET 8
 
 ### Windows
 
-On Windows (x64 only, for now), you will need to execute:
+To build signed executables on Windows, you will need to install a code signing certificate on your system; in the following commands, `<subject>` should be the code signing certificate subject, while `<pin>` should be your smart card pin. If you do not have a code signing certificate, you can still build unsigned executables by using random strings for these parameters: the signing step will fail, but the executables will still be produced.
+
+You will need to execute a different script depending on your architecture.
+
+#### Windows-x64
 
 ```cmd
 BuildRelease-win-x64.cmd <subject> <pin>
 ```
 
-Where `<subject>` is your code signing certificate subject and `<pin>` is your smart card pin. If you do not have a code signing certificate, you can enter random strings for these: the signing step will fail, but the executables will still be produced.
+#### Windows-arm64
+
+```cmd
+BuildRelease-win-arm64.cmd <subject> <pin>
+```
 
 ### Linux
 

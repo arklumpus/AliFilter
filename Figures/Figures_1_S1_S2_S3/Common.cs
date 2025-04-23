@@ -20,8 +20,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using VectSharp;
+using VectSharp.Plots;
 
 namespace Figures_1_S1_S2_S3
 {
@@ -238,6 +240,219 @@ namespace Figures_1_S1_S2_S3
             maskPage.Crop();
 
             return maskPage;
+        }
+
+        /// <summary>
+        /// Draw the ROC curve.
+        /// </summary>
+        /// <param name="scores">Column scores.</param>
+        /// <param name="trueMask">"True" (i.e., manual) alignment mask.</param>
+        /// <param name="modelThreshold">Threshold value used by the model.</param>
+        /// <param name="modelValues">When this method returns, this variable will hold the threshold value and the accuracy and MCC scores corresponding to the default model threshold.</param>
+        /// <param name="optimalAValues">When this method returns, this variable will hold the threshold value and the accuracy and MCC scores corresponding to the threshold that optimises the accuracy.</param>
+        /// <param name="optimalMCCValues">When this method returns, this variable will hold the threshold value and the accuracy and MCC scores corresponding to the threshold that optimises the MCC.</param>
+        /// <returns>A <see cref="Page"/> containing the ROC plot.</returns>
+        static Page DrawROCCurve(double[] scores, string trueMask, double modelThreshold, out (double threshold, double a, double mcc) modelValues, out (double threshold, double a, double mcc) optimalAValues, out (double threshold, double a, double mcc) optimalMCCValues)
+        {
+            // Compute the ROC curve.
+            List<(double fpr, double tpr)> ROCCurve = ComputeROCCurve(scores, trueMask.Select(x => x switch { '0' => false, '1' => true, _ => throw new Exception("Invalid mask state") }).ToArray(), out List<double> thresholds, out List<double> accuracy, out List<double> mcc, out double auc);
+
+            // Identify points corresponding to the optimal thresholds and to the current threshold.
+            int currentThreshold = -1;
+            int optimalAccuracy = -1;
+            int optimalMCC = -1;
+            double maxAccuracy = double.MinValue;
+            double maxMCC = double.MinValue;
+
+            for (int i = 0; i < ROCCurve.Count; i++)
+            {
+                if (accuracy[i] > maxAccuracy)
+                {
+                    maxAccuracy = accuracy[i];
+                    optimalAccuracy = i;
+                }
+
+                if (mcc[i] > maxMCC)
+                {
+                    maxMCC = mcc[i];
+                    optimalMCC = i;
+                }
+
+                if (i < ROCCurve.Count - 1 && thresholds[i] <= modelThreshold && thresholds[i + 1] >= modelThreshold)
+                {
+                    currentThreshold = i;
+                }
+            }
+
+            // Create the ROC plot.
+            Plot rocPlot = Plot.Create.LineChart(ROCCurve, xAxisTitle: "False positive rate", yAxisTitle: "True positive rate", width: 150, height: 100,
+                axisLabelPresentationAttributes: new PlotElementPresentationAttributes()
+                {
+                    Stroke = null,
+                    Fill = Colours.Black,
+                    Font = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.Helvetica), 8)
+                },
+                axisTitlePresentationAttributes: new PlotElementPresentationAttributes()
+                {
+                    Stroke = null,
+                    Fill = Colours.Black,
+                    Font = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 10)
+                },
+                linePresentationAttributes: new PlotElementPresentationAttributes()
+                {
+                    Stroke = Colours.Black,
+                    LineWidth = 1
+                },
+                axisPresentationAttributes: new PlotElementPresentationAttributes()
+                {
+                    Stroke = Colours.Black,
+                    LineWidth = 0.5
+                },
+                gridPresentationAttributes: new PlotElementPresentationAttributes()
+                {
+                    Stroke = Colour.FromRgb(200, 200, 200),
+                    LineWidth = 0.5
+                }, axisArrowSize: 5);
+
+            rocPlot.GetAll<ContinuousAxisTitle>().ElementAt(1).Position += 5;
+
+            // Add the threshold points.
+            rocPlot.AddPlotElement(new PlotElement<IReadOnlyList<double>>(rocPlot.GetFirst<IContinuousCoordinateSystem>(), (gpr, coord) =>
+            {
+                Point currentPt = coord.ToPlotCoordinates(new double[] { ROCCurve[currentThreshold].fpr, ROCCurve[currentThreshold].tpr });
+                Point optimalAccuracyPt = coord.ToPlotCoordinates(new double[] { ROCCurve[optimalAccuracy].fpr, ROCCurve[optimalAccuracy].tpr });
+                Point optimalMCCPt = coord.ToPlotCoordinates(new double[] { ROCCurve[optimalMCC].fpr, ROCCurve[optimalMCC].tpr });
+
+                gpr.StrokePath(new GraphicsPath().MoveTo(currentPt.X - 3, currentPt.Y - 3).LineTo(currentPt.X + 3, currentPt.Y - 3).LineTo(currentPt.X, currentPt.Y + 3).Close(), Colours.White, 2, lineJoin: LineJoins.Round); 
+                gpr.FillPath(new GraphicsPath().MoveTo(currentPt.X - 3, currentPt.Y - 3).LineTo(currentPt.X + 3, currentPt.Y - 3).LineTo(currentPt.X, currentPt.Y + 3).Close(), Gradients.ViridisColouring(modelThreshold));
+
+                gpr.StrokePath(new GraphicsPath().MoveTo(optimalAccuracyPt.X - 3, optimalAccuracyPt.Y).LineTo(optimalAccuracyPt.X, optimalAccuracyPt.Y - 3).LineTo(optimalAccuracyPt.X + 3, optimalAccuracyPt.Y).LineTo(optimalAccuracyPt.X, optimalAccuracyPt.Y + 3).Close(), Colours.White, 2, lineJoin: LineJoins.Round);
+                gpr.FillPath(new GraphicsPath().MoveTo(optimalAccuracyPt.X - 3, optimalAccuracyPt.Y).LineTo(optimalAccuracyPt.X, optimalAccuracyPt.Y - 3).LineTo(optimalAccuracyPt.X + 3, optimalAccuracyPt.Y).LineTo(optimalAccuracyPt.X, optimalAccuracyPt.Y + 3).Close(), Gradients.ViridisColouring(thresholds[optimalAccuracy]));
+
+                if (optimalMCC != optimalAccuracy)
+                {
+                    gpr.StrokePath(new GraphicsPath().Arc(optimalMCCPt, 3, 0, 2 * Math.PI).Close(), Colours.White, 2, lineJoin: LineJoins.Round);
+                    gpr.FillPath(new GraphicsPath().Arc(optimalMCCPt, 3, 0, 2 * Math.PI).Close(), Gradients.ViridisColouring(thresholds[optimalMCC]));
+                }
+
+                Font labelFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.Helvetica), 8);
+
+                gpr.FillText(currentPt.X + 5, currentPt.Y, FormattedText.Format("Model threshold", FontFamily.StandardFontFamilies.Helvetica, 8), Colours.Black, TextBaselines.Middle);
+
+                if (optimalMCC != optimalAccuracy)
+                {
+                    gpr.FillText(optimalAccuracyPt.X - 5, optimalAccuracyPt.Y + 9, FormattedText.Format("Optimal <i>A</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 8), Colours.Black, TextBaselines.Middle);
+                    gpr.FillText(optimalMCCPt.X + 5, optimalMCCPt.Y + 4, FormattedText.Format("Optimal <i>MCC</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 8), Colours.Black, TextBaselines.Middle);
+                }
+                else
+                {
+                    gpr.FillText(optimalMCCPt.X + 5, optimalMCCPt.Y + 5, FormattedText.Format("Optimal threshold", FontFamily.StandardFontFamilies.Helvetica, 8), Colours.Black, TextBaselines.Middle);
+                }
+
+                FormattedText[] aucText = FormattedText.Format($"<i>AUC</i> = {auc.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}", FontFamily.StandardFontFamilies.Helvetica, 8).ToArray();
+
+                gpr.FillText(coord.ToPlotCoordinates(new double[] { 1, 0 }) + new Point(- aucText.Measure().Width - 3, - 3), aucText, Colours.Black, TextBaselines.Bottom);
+
+            }));
+
+            // Return the accuracy and MCC values corresponding to the various thresholds.
+            modelValues = (thresholds[currentThreshold], accuracy[currentThreshold], mcc[currentThreshold]);
+            optimalAValues = (thresholds[optimalAccuracy], accuracy[optimalAccuracy], mcc[optimalAccuracy]);
+            optimalMCCValues = (thresholds[optimalMCC], accuracy[optimalMCC], mcc[optimalMCC]);
+
+            // Render the plot.
+            Page renderedPlot = rocPlot.Render();
+            renderedPlot.Crop();
+
+            return renderedPlot;
+        }
+
+        /// <summary>
+        /// Compute the ROC curve.
+        /// </summary>
+        /// <param name="scores">The column scores.</param>
+        /// <param name="trueLabels">The "true" (i.e., manual) label for each column.</param>
+        /// <param name="thresholds">When this method returns, this variable will contain the list of thresholds corresponding to the (fpr, tpr) pairs.</param>
+        /// <param name="accuracy">When this method returns, this variable will contain the list of accuracy values corresponding to the (fpr, tpr) pairs.</param>
+        /// <param name="mcc">When this method returns, this variable will contain the list of MCC values corresponding to the (fpr, tpr) pairs.</param>
+        /// <param name="auc">When this method returns, this variable will contain the area under the ROC curve.</param>
+        /// <returns>The ROC curve, as a list of (fpr, tpr) pairs (fpr: false positive rate [x axis], tpr: true positive rate [y axis]).</returns>
+        static List<(double fpr, double tpr)> ComputeROCCurve(double[] scores, bool[] trueLabels, out List<double> thresholds, out List<double> accuracy, out List<double> mcc, out double auc)
+        {
+            // Sort the scores (and corresponding labels) in ascending order.
+            (double, bool)[] sortedPredictions = scores.Select((x, i) => (x, trueLabels[i])).OrderBy(x => x.x).ThenBy(x => x.Item2 ? 1 : 0).ToArray();
+
+            // Starting condition, with a threshold of 0: everything is positive (either true or false).
+            int tp = trueLabels.Count(x => x);
+            int tn = 0;
+            int fp = trueLabels.Length - tp;
+            int fn = 0;
+            double currentThreshold = 0;
+
+            // This list will contain the ROC curve.
+            List<(double fpr, double tpr)> roc = new List<(double fpr, double tpr)>()
+            {
+                (1, 1)
+            };
+
+            // Threshold values, accuracy and MCC corresponding to each point of the ROC curve.
+            thresholds = new List<double>() { 1 };
+            accuracy = new List<double>() { (double)(tp + tn) / (tp + tn + fp + fn) };
+            mcc = new List<double>() { ((double)tp * tn - (double)fp * fn) / Math.Sqrt(((double)tp + fp) * ((double)tp + fn) * ((double)tn + fp) * ((double)tn + fn)) };
+
+            // Go through the sorted scores in ascending order, increasing the threshold after each point.
+            for (int i = 0; i < sortedPredictions.Length; i++)
+            {
+                if (sortedPredictions[i].Item1 > currentThreshold)
+                {
+                    double tpr = tp == 0 ? 0 : (double)tp / (tp + fn);
+                    double fpr = fp == 0 ? 0 : (double)fp / (fp + tn);
+
+                    // TPR and FPR should be weakly monotonic.
+                    Debug.Assert(tpr <= roc[^1].tpr);
+                    Debug.Assert(fpr <= roc[^1].fpr);
+
+                    roc.Add((fpr, tpr));
+
+                    currentThreshold = sortedPredictions[i].Item1;
+                    thresholds.Add(currentThreshold);
+                }
+
+                // By increasing the threshold, we have removed a positive point.
+                // It was either a true positive (in which case we have added a false
+                // negative), or a false positive (in which case we have added a true
+                // negative).
+
+                if (sortedPredictions[i].Item2) // It was a TP
+                {
+                    fn++;
+                    tp--;
+                }
+                else // It was a FP
+                {
+                    tn++;
+                    fp--;
+                }
+
+                // Compute the accuracy and MCC scores for the current threshold.
+                accuracy.Add((double)(tp + tn) / (tp + tn + fp + fn));
+                mcc.Add(((double)tp * tn - (double)fp * fn) / Math.Sqrt(((double)tp + fp) * ((double)tp + fn) * ((double)tn + fp) * ((double)tn + fn)));
+            }
+
+            // Final state: the threshold is 1, so everything is a negative (either true or false).
+            roc.Add((0, 0));
+            thresholds.Add(0);
+            accuracy.Add((double)trueLabels.Count(x => !x) / trueLabels.Length);
+            mcc.Add(0);
+
+            // Compute the AUC using the trapezoidal rule.
+            auc = 0;
+            for (int i = roc.Count - 2; i >= 0; i--)
+            {
+                auc += (roc[i].fpr - roc[i + 1].fpr) * (roc[i].tpr + roc[i + 1].tpr) * 0.5;
+            }
+
+            return roc;
         }
     }
 }

@@ -75,6 +75,9 @@ namespace Figures_1_S1_S2_S3
             // Font for the outgroup.
             Font outgroupFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaOblique), 8);
 
+            // Font for the part letters.
+            Font partLetterFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 10);
+
             // Draw the alignment.
             Page alignmentPage = DrawAlignment(sortedSequences, alignment, residueWidth, sequenceHeight);
 
@@ -87,10 +90,20 @@ namespace Figures_1_S1_S2_S3
             Page aliFilterMaskPage = DrawMask(alifilterMask, residueWidth, maskHeight, Colour.FromRgb(119, 170, 221));
             Page maskPage = DrawFuzzyMasks(new List<string>() { "AliFilter_Float" }, new Dictionary<string, double[]>() { { "AliFilter_Float", alifilterScores } }, residueWidth, maskHeight, colouring);
 
+            // Draw the ROC curve.
+            Page rocCurvePage = DrawROCCurve(alifilterScores, manualMask, threshold, out (double threshold, double a, double mcc) model, out (double threshold, double a, double mcc) optimalA, out (double threshold, double a, double mcc) optimalMCC);
+
+            // Draw the tree space plot.
+            Page treeSpacePage = TreeSpace.GetTreeSpacePlot("27", 300, 3);
+
             // Final page for the full figure.
-            Page fullPage = new Page(482, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30);
+            Page fullPage = new Page(482, alignmentPage.Height + 17 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30 + rocCurvePage.Height + 20);
             fullPage.Background = Colours.White;
             Graphics gpr = fullPage.Graphics;
+
+            // Draw the part letter for part a
+            gpr.FillText(0, 0, "a)", partLetterFont, Colours.Black);
+            gpr.Translate(0, 7);
 
             // Maximum width of the key labels.
             double labelWidth = outgroupFont.MeasureText("Outgroup").Width + 7;
@@ -138,7 +151,7 @@ namespace Figures_1_S1_S2_S3
 
             {
                 gpr.Save();
-                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 15);
+                gpr.Translate(35, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17);
 
                 gpr.FillText(-5, maskHeight * 0.5, "Preservation score", maskFont, Colours.Black, TextBaselines.Middle);
 
@@ -166,8 +179,63 @@ namespace Figures_1_S1_S2_S3
 
                     gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12 - maskHeight * 0.25).Close(), colouring(threshold));
 
-                    gpr.FillText(left - maskFont.MeasureText("Model threshold").Width - 8, -12, "Model threshold", maskFont, Colours.Black, TextBaselines.Middle);
+                    gpr.FillText(left + 8, -9, "Model threshold", maskFont, Colours.Black, TextBaselines.Baseline);
                 }
+
+                {
+                    gpr.Save();
+                    gpr.Translate(0, 2);
+                    double left = x0 + optimalMCC.threshold * width;
+
+                    gpr.FillPath(new GraphicsPath().Arc(left, -12, maskHeight * 0.25, 0, 2 * Math.PI).Close(), colouring(optimalMCC.threshold));
+
+                    FormattedText[] text = FormattedText.Format("Optimal <i>MCC</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
+
+                    gpr.FillText(left - 8 - text.Measure().Width, -9, text, Colours.Black, TextBaselines.Baseline);
+                    gpr.Restore();
+                }
+
+                {
+                    gpr.Save();
+                    gpr.Translate(0, -2);
+
+                    double left = x0 + optimalA.threshold * width;
+
+                    gpr.StrokePath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), Colours.White ,2);
+                    gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), colouring(optimalA.threshold));
+
+                    FormattedText[] text = FormattedText.Format("Optimal <i>A</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
+
+                    gpr.FillText(left + 8, -9, text, Colours.Black, TextBaselines.Baseline);
+
+                    gpr.Restore();
+                }
+
+                gpr.Restore();
+            }
+
+            {
+                gpr.Save();
+
+                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20 + 5);
+
+                // Draw the part letter for part b
+                gpr.FillText(-5, 3, "b)", partLetterFont, Colours.Black, TextBaselines.Baseline);
+
+                gpr.DrawGraphics(0, 0, rocCurvePage.Graphics);
+
+                gpr.Restore();
+            }
+
+            {
+                gpr.Save();
+
+                gpr.Translate(fullPage.Width - treeSpacePage.Width, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20 + 5);
+
+                // Draw the part letter for part c
+                gpr.FillText(0, 3, "c)", partLetterFont, Colours.Black, TextBaselines.Baseline);
+
+                gpr.DrawGraphics(0, 0, treeSpacePage.Graphics);
 
                 gpr.Restore();
             }

@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figure_3", "Figure_3\Figure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figure_4", "Figure_4\Figure_4.csproj", "{8666F655-BD33-4B36-AC4A-5A8722A8545D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figures_5_S4_Table_S2", "Figures_5_S4_Table_S2\Figures_5_S4_Table_S2.csproj", "{1C37E21B-A16B-4730-BA87-19C2527A6203}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figures_5_S4_S5_Table_S2", "Figures_5_S4_S5_Table_S2\Figures_5_S4_S5_Table_S2.csproj", "{1C37E21B-A16B-4730-BA87-19C2527A6203}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

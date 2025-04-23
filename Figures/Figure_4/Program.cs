@@ -34,12 +34,12 @@ namespace Figure_4
         {
             // Create the figure parts.
             Page barChart = CreateFigure4a();
-            Page accuracyPlot = CreateFigure4b();
+            Page similarityPlot = CreateFigure4b();
 
             // Draw both figure parts on the same figure.
             Page pag = new Page(1, 1);
             pag.Graphics.DrawGraphics(20, 0, barChart.Graphics);
-            pag.Graphics.DrawGraphics(barChart.Width + 30, barChart.Height - accuracyPlot.Height, accuracyPlot.Graphics);
+            pag.Graphics.DrawGraphics(barChart.Width + 30, barChart.Height - similarityPlot.Height, similarityPlot.Graphics);
 
             // Draw the figure part letters.
             Font fntBold = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 14);
@@ -168,13 +168,13 @@ namespace Figure_4
 
         private static Page CreateFigure4b()
         {
-            // Read thhe confusion matrices.
+            // Read the confusion matrices.
             List<int[][]>[] confusionMatrices = ReadConfusionMatrices();
             string[] tools = new string[] { "Unfiltered", "Manual", "AliFilter", "BMGE", "trimAl", "Gblocks", "Noisy", "ClipKIT" };
             string[] datasets = new string[] { "Dataset1", "Dataset2", "Dataset3", "Dataset4", "Dataset5", "Dataset6", "Dataset7", "Dataset8" };
 
-            // Compute the "accuracy" score for each alignment.
-            double[][][] accuracyByAlignment = datasets.Select((d, j) => tools.Skip(2).Select((t, i) => confusionMatrices[j].Select(z => ComputeAccuracy(z[i][0], z[i][1], z[i][2], z[i][3])).ToArray()).ToArray()).ToArray();
+            // Compute the similarity score for each alignment.
+            double[][][] similarityByAlignment = datasets.Select((d, j) => tools.Skip(2).Select((t, i) => confusionMatrices[j].Select(z => ComputeAccuracy(z[i][0], z[i][1], z[i][2], z[i][3])).ToArray()).ToArray()).ToArray();
 
             Colour[] toolColours = new Colour[8]
             {
@@ -189,7 +189,7 @@ namespace Figure_4
             };
 
             // Create the box plots.
-            Plot accuracyPlot = Plot.Create.BoxPlot(tools.Skip(2).Select((t, i) => accuracyByAlignment.SelectMany(y => y[i]).ToArray()).ToArray(), useNotches: false, width: 150, height: 280, yAxisTitle: "Accuracy", dataRangeMin: 0, dataRangeMax: 1,
+            Plot similarityPlot = Plot.Create.BoxPlot(tools.Skip(2).Select((t, i) => similarityByAlignment.SelectMany(y => y[i]).ToArray()).ToArray(), useNotches: false, width: 150, height: 280, yAxisTitle: "Similarity with Manual", dataRangeMin: 0, dataRangeMax: 1,
                 boxPresentationAttributes: toolColours.Skip(2).Select(x => new PlotElementPresentationAttributes()
                 {
                     Stroke = x,
@@ -197,9 +197,9 @@ namespace Figure_4
                 }).ToArray());
 
             // Fine-tune the plot appearance.
-            accuracyPlot.RemovePlotElement(accuracyPlot.GetFirst<ScatterPoints<IReadOnlyList<double>>>());
-            accuracyPlot.RemovePlotElement(accuracyPlot.GetFirst<ContinuousAxis>());
-            accuracyPlot.AddPlotElement(new PlotElement<IReadOnlyList<double>>(accuracyPlot.GetFirst<IContinuousCoordinateSystem>(), (gpr, coord) =>
+            similarityPlot.RemovePlotElement(similarityPlot.GetFirst<ScatterPoints<IReadOnlyList<double>>>());
+            similarityPlot.RemovePlotElement(similarityPlot.GetFirst<ContinuousAxis>());
+            similarityPlot.AddPlotElement(new PlotElement<IReadOnlyList<double>>(similarityPlot.GetFirst<IContinuousCoordinateSystem>(), (gpr, coord) =>
             {
                 Font fnt = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.Helvetica), 12);
 
@@ -220,7 +220,7 @@ namespace Figure_4
 
             int plotIndex = 0;
 
-            foreach (ScatterPoints<IReadOnlyList<double>> outliers in accuracyPlot.GetAll<ScatterPoints<IReadOnlyList<double>>>())
+            foreach (ScatterPoints<IReadOnlyList<double>> outliers in similarityPlot.GetAll<ScatterPoints<IReadOnlyList<double>>>())
             {
                 double x = outliers.Data.First()[0];
 
@@ -228,13 +228,13 @@ namespace Figure_4
 
                 swarm.PresentationAttributes = new PlotElementPresentationAttributes() { Stroke = null, Fill = toolColours[plotIndex + 2] };
 
-                accuracyPlot.AddPlotElement(swarm);
-                accuracyPlot.RemovePlotElement(outliers);
+                similarityPlot.AddPlotElement(swarm);
+                similarityPlot.RemovePlotElement(outliers);
 
                 plotIndex++;
             }
 
-            Page pag = accuracyPlot.Render();
+            Page pag = similarityPlot.Render();
             pag.Crop();
 
             return pag;

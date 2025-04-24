@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figure_4", "Figure_4\Figure
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figures_5_S4_S5_Table_S2", "Figures_5_S4_S5_Table_S2\Figures_5_S4_S5_Table_S2.csproj", "{1C37E21B-A16B-4730-BA87-19C2527A6203}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Figure_S6", "Figure_S6\Figure_S6.csproj", "{C2062FD5-916D-46C3-96BD-62BB9EC0CD06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{1C37E21B-A16B-4730-BA87-19C2527A6203}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C37E21B-A16B-4730-BA87-19C2527A6203}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C37E21B-A16B-4730-BA87-19C2527A6203}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2062FD5-916D-46C3-96BD-62BB9EC0CD06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2062FD5-916D-46C3-96BD-62BB9EC0CD06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2062FD5-916D-46C3-96BD-62BB9EC0CD06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2062FD5-916D-46C3-96BD-62BB9EC0CD06}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

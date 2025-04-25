@@ -18,20 +18,22 @@ This folder contains the datasets that were used to train AliFilter models and a
 
 8. `8_rRNA_SILVA` contains 58 alignments of small subunit (SSU) and large subunit (LSU) rRNA sequences, retrieved from the SILVA database [[5]](https://doi.org/10.1093/NAR/GKS1219). Each alignment contains between 42 and 2000 rRNA sequences from a single group (phylum, class, or order) of prokaryotes or eukaryotes.
 
+9. `Animals` contains 172 alignments of single-copy protein coding genes from 39 animal species (of which 31 are chordates), adapted from [[6]](https://doi.org/10.1038/s41559-023-02299-z). These alignments were not manually filtered and were only used to compare the results of phylogenetic analyses that used different alignment filtering tools.
+
 Each subfolder contains further subfolders with the alignment files:
 
 * `AliFilter_Filtered` contains alignments filtered using the default AliFilter model.
-* `BMGE_Filtered` contains alignments filtered using BMGE [[6]](https://doi.org/10.1186/1471-2148-10-210) with the default settings.
-* `ClipKIT_Filtered` contains alignments filtered using ClipKIT [[7]](https://doi.org/10.1371/journal.pbio.3001007) with the default settings.
+* `BMGE_Filtered` contains alignments filtered using BMGE [[7]](https://doi.org/10.1186/1471-2148-10-210) with the default settings.
+* `ClipKIT_Filtered` contains alignments filtered using ClipKIT [[8]](https://doi.org/10.1371/journal.pbio.3001007) with the default settings.
 * `ERRM_Filtered` contains alignments manually filtered by Edmund R. R. Moody (only for datasets 2, 3, and 4).
 * `FC_Filtered` contains alignments manually filtered by Francesco Cicconardi (only for datasets 5, 6, and 7).
 * `GB_Filtered` contains alignments manually filtered by Giorgio Bianchini.
-* `Gblocks_Filtered` contains alignments filtered using Gblocks [[8]](https://doi.org/10.1093/OXFORDJOURNALS.MOLBEV.A026334) with the `b1` and `b2` parameters set to $0.5 \cdot n$ (where $n$ is the number of sequences in the alignment), the `b3` parameter set to `1`, `b4` set to `6`, and `b5` to `h`.
-* `Noisy_Filtered` contains alignments filtered using Noisy [[9]](https://doi.org/10.1186/1748-7188-3-7) with the default settings.
+* `Gblocks_Filtered` contains alignments filtered using Gblocks [[9]](https://doi.org/10.1093/OXFORDJOURNALS.MOLBEV.A026334) with the `b1` and `b2` parameters set to $0.5 \cdot n$ (where $n$ is the number of sequences in the alignment), the `b3` parameter set to `1`, `b4` set to `6`, and `b5` to `h`.
+* `Noisy_Filtered` contains alignments filtered using Noisy [[10]](https://doi.org/10.1186/1748-7188-3-7) with the default settings.
 * `Raw_Alignments` contains the raw alignment files.
-* `trimAl_Filtered` contains alignments filtered using trimAl [[10]](https://doi.org/10.1093/bioinformatics/btp348) with the `automated1` option.
+* `trimAl_Filtered` contains alignments filtered using trimAl [[11]](https://doi.org/10.1093/bioinformatics/btp348) with the `automated1` option.
 
-Furthermore, each dataset folder also contains three text files (`Training_set.txt`, `Validation_set.txt`, and `Test_set.txt`), which list the alignments used for model training, validation and testing (except for dataset 1, which was entirely used as a test set).
+Furthermore, each dataset folder also contains three text files (`Training_set.txt`, `Validation_set.txt`, and `Test_set.txt`), which list the alignments used for model training, validation and testing (except for dataset 1, which was entirely used as a test set, and the animal dataset, which was not used for model training or assessment).
 
 ## References
 
@@ -45,12 +47,14 @@ Furthermore, each dataset folder also contains three text files (`Training_set.t
 
 [5] Quast, C., Pruesse, E., Yilmaz, P., Gerken, J., Schweer, T., Yarza, P., Peplies, J., & Glöckner, F. O. (2013). The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucleic Acids Research, 41(D1), D590–D596. https://doi.org/10.1093/NAR/GKS1219
 
-[6] Criscuolo, A., Gribaldo, S. BMGE (Block Mapping and Gathering with Entropy): a new software for selection of phylogenetic informative regions from multiple sequence alignments. BMC Evol Biol 10, 210 (2010). https://doi.org/10.1186/1471-2148-10-210
+[6] Yu, D., Ren, Y., Uesaka, M., Beavan, A. J. S., Muffato, M., Shen, J., Li, Y., Sato, I., Wan, W., Clark, J. W., Keating, J. N., Carlisle, E. M., Dearden, R. P., Giles, S., Randle, E., Sansom, R. S., Feuda, R., Fleming, J. F., Sugahara, F., Cummins, C., Patricio, M., Akanni, W., D’Aniello, S., Bertolucci, C., Irie, N., Alev, C., Sheng, G., de Mendoza, A., Maeso, I., Irimia, M., Fromm, B., Peterson, K., Das, S., Hirano, M., Rast, J., Cooper, M., Paps, J., Pisani, D., Kuratani, S., Martin, F., Wang, W., Donoghue, P., Zhang, Y., Pascual-Anaya, J. (2024). Hagfish genome elucidates vertebrate whole-genome duplication events and their evolutionary consequences. Nature Ecology & Evolution, 8(3), 519–535. https://doi.org/10.1038/s41559-023-02299-z
 
-[7] Steenwyk JL, Buida TJ III, Li Y, Shen X-X, Rokas A (2020) ClipKIT: A multiple sequence alignment trimming software for accurate phylogenomic inference. PLoS Biol 18(12): e3001007. https://doi.org/10.1371/journal.pbio.3001007
+[7] Criscuolo, A., Gribaldo, S. BMGE (Block Mapping and Gathering with Entropy): a new software for selection of phylogenetic informative regions from multiple sequence alignments. BMC Evol Biol 10, 210 (2010). https://doi.org/10.1186/1471-2148-10-210
 
-[8] Castresana, J. (2000). Selection of Conserved Blocks from Multiple Alignments for Their Use in Phylogenetic Analysis. Molecular Biology and Evolution, 17(4), 540–552. https://doi.org/10.1093/OXFORDJOURNALS.MOLBEV.A026334
+[8] Steenwyk JL, Buida TJ III, Li Y, Shen X-X, Rokas A (2020) ClipKIT: A multiple sequence alignment trimming software for accurate phylogenomic inference. PLoS Biol 18(12): e3001007. https://doi.org/10.1371/journal.pbio.3001007
 
-[9] Dress, A.W., Flamm, C., Fritzsch, G. et al. Noisy: Identification of problematic columns in multiple sequence alignments. Algorithms Mol Biol 3, 7 (2008). https://doi.org/10.1186/1748-7188-3-7
+[9] Castresana, J. (2000). Selection of Conserved Blocks from Multiple Alignments for Their Use in Phylogenetic Analysis. Molecular Biology and Evolution, 17(4), 540–552. https://doi.org/10.1093/OXFORDJOURNALS.MOLBEV.A026334
 
-[10] Salvador Capella-Gutiérrez, José M. Silla-Martínez, Toni Gabaldón, trimAl: a tool for automated alignment trimming in large-scale phylogenetic analyses, Bioinformatics, Volume 25, Issue 15, August 2009, Pages 1972–1973, https://doi.org/10.1093/bioinformatics/btp348
+[10] Dress, A.W., Flamm, C., Fritzsch, G. et al. Noisy: Identification of problematic columns in multiple sequence alignments. Algorithms Mol Biol 3, 7 (2008). https://doi.org/10.1186/1748-7188-3-7
+
+[11] Salvador Capella-Gutiérrez, José M. Silla-Martínez, Toni Gabaldón, trimAl: a tool for automated alignment trimming in large-scale phylogenetic analyses, Bioinformatics, Volume 25, Issue 15, August 2009, Pages 1972–1973, https://doi.org/10.1093/bioinformatics/btp348

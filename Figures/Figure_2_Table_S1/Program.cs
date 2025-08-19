@@ -377,32 +377,39 @@ namespace Figure2_Table_S1
             // Model confidence for each alignment.
             List<double> alignmentC = new List<double>();
 
+            // Overall AUC.
+            double overallAUC = double.NaN;
+            // AUC for each alignment.
+            List<double> alignmentAUC = new List<double>();
+
             // Print the header for Table S1
             Console.WriteLine("# Table S1");
             Console.WriteLine();
-            Console.WriteLine("            \t      Overall     \t\t      Alignment-wise (1st quartile - median - 3rd quartile)");
-            Console.WriteLine("Test dataset\t A  \tMCC \t C  \t\t        A         \t        MCC       \t        C         ");
+            Console.WriteLine("            \t           Overall             \t\t                  Alignment-wise (1st quartile - median - 3rd quartile)");
+            Console.WriteLine("Test dataset\t A  \tMCC \t C\tAUC  \t\t        A         \t        MCC       \t        C         \t        AUC         ");
 
             for (int i = 0; i < datasets.Length; i++)
             {
                 // Read the scores for each dataset.
-                ((double a, double mcc, double c) overall, Dictionary<string, (double a, double mcc, double c)> scores) = ReadScores(datasets[i]);
+                ((double a, double mcc, double c, double auc) overall, Dictionary<string, (double a, double mcc, double c, double auc)> scores) = ReadScores(datasets[i], true);
 
                 // Store the overall MCC and accuracy.
                 overallScores[i] = new double[] { overall.mcc, overall.a };
 
-                // Store the model confidence score.
+                // Store the model confidence score and AUC.
                 alignmentC.AddRange(scores.Select(x => x.Value.c));
+                alignmentAUC.AddRange(scores.Select(x => x.Value.auc));
                 if (i == datasets.Length - 1)
                 {
                     overallC = overall.c;
+                    overallAUC = overall.auc;
                 }
 
                 // Store the MCC and A scores and the name of each alignment.
                 alignmentScores[i] = new double[scores.Count][];
                 alignmentNames[i] = new string[scores.Count];
                 int j = 0;
-                foreach (KeyValuePair<string, (double a, double mcc, double c)> kvp in scores)
+                foreach (KeyValuePair<string, (double a, double mcc, double c, double auc)> kvp in scores)
                 {
                     alignmentScores[i][j] = new double[] { kvp.Value.mcc, kvp.Value.a };
                     alignmentNames[i][j] = kvp.Key;
@@ -412,10 +419,11 @@ namespace Figure2_Table_S1
 
             // Print the scores for the full dataset.
             {
-                Console.WriteLine("  {0}\t{1}\t{2}\t{3}\t\t{4} - {5} - {6}\t{7} - {8} - {9}\t{10} - {11} - {12}", ("9 (n=" + alignmentC.Count + ")").PadRight(12), overallScores[^1][1].ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overallScores[^1][0].ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overallC.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                Console.WriteLine("  {0}\t{1}\t{2}\t{3}\t{4}\t\t{5} - {6} - {7}\t{8} - {9} - {10}\t{11} - {12} - {13}\t{14} - {15} - {16}", ("9 (n=" + alignmentC.Count + ")").PadRight(12), overallScores[^1][1].ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overallScores[^1][0].ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overallC.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overallAUC.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                 alignmentScores.SelectMany(x => x.Select(y => y[1])).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentScores.SelectMany(x => x.Select(y => y[1])).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentScores.SelectMany(x => x.Select(y => y[1])).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                 alignmentScores.SelectMany(x => x.Select(y => y[0])).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentScores.SelectMany(x => x.Select(y => y[0])).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentScores.SelectMany(x => x.Select(y => y[0])).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
-                alignmentC.LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentC.Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentC.UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+                alignmentC.LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentC.Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentC.UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                alignmentAUC.LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentAUC.Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), alignmentAUC.UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
             }
 
             // Create the scatter plot.
@@ -572,7 +580,7 @@ namespace Figure2_Table_S1
             for (int i = 0; i < datasets.Length; i++)
             {
                 // Read the scores for each dataset.
-                ((double a, double mcc, double c) overall, Dictionary<string, (double a, double mcc, double c)> scores) = ReadScores(datasets[i]);
+                ((double a, double mcc, double c, double auc) overall, Dictionary<string, (double a, double mcc, double c, double auc)> scores) = ReadScores(datasets[i], false);
 
                 // Store the overall MCC and accuracy.
                 overallScores[i] = new double[] { overall.mcc, overall.a };
@@ -588,7 +596,7 @@ namespace Figure2_Table_S1
                 alignmentScores[i] = new double[scores.Count][];
                 alignmentNames[i] = new string[scores.Count];
                 int j = 0;
-                foreach (KeyValuePair<string, (double a, double mcc, double c)> kvp in scores)
+                foreach (KeyValuePair<string, (double a, double mcc, double c, double auc)> kvp in scores)
                 {
                     alignmentScores[i][j] = new double[] { kvp.Value.mcc, kvp.Value.a };
                     alignmentNames[i][j] = kvp.Key;
@@ -614,8 +622,9 @@ namespace Figure2_Table_S1
         /// Read the scores of the default AliFilter model against the specified dataset.
         /// </summary>
         /// <param name="dataset">The dataset.</param>
+        /// <param name="print">Whether the scores should be printed to the standard output.</param>
         /// <returns>The scores of the default AliFilter model against the specified dataset.</returns>
-        private static ((double a, double mcc, double c), Dictionary<string, (double a, double mcc, double c)>) ReadScores(string dataset)
+        private static ((double a, double mcc, double c, double auc), Dictionary<string, (double a, double mcc, double c, double auc)>) ReadScores(string dataset, bool print)
         {
             using (StreamReader sr = new StreamReader("../../../Data/" + dataset + ".txt"))
             {
@@ -623,9 +632,9 @@ namespace Figure2_Table_S1
 
                 string[] splitLine = line.Split("\t");
 
-                (double a, double mcc, double c) overall = (double.Parse(splitLine[1], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[2], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[3], System.Globalization.CultureInfo.InvariantCulture));
+                (double a, double mcc, double c, double auc) overall = (double.Parse(splitLine[1], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[2], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[3], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[4], System.Globalization.CultureInfo.InvariantCulture));
 
-                Dictionary<string, (double, double, double)> scores = new Dictionary<string, (double, double, double)>();
+                Dictionary<string, (double, double, double, double)> scores = new Dictionary<string, (double, double, double, double)>();
 
                 line = sr.ReadLine();
 
@@ -633,17 +642,18 @@ namespace Figure2_Table_S1
                 {
                     splitLine = line.Split("\t");
 
-                    scores.Add(splitLine[0], (double.Parse(splitLine[1], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[2], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[3], System.Globalization.CultureInfo.InvariantCulture)));
+                    scores.Add(splitLine[0], (double.Parse(splitLine[1], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[2], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[3], System.Globalization.CultureInfo.InvariantCulture), double.Parse(splitLine[4], System.Globalization.CultureInfo.InvariantCulture)));
 
                     line = sr.ReadLine();
                 }
 
-                if (dataset != "Dataset9")
+                if (print && dataset != "Dataset9")
                 {
-                    Console.WriteLine("  {0}\t{1}\t{2}\t{3}\t\t{4} - {5} - {6}\t{7} - {8} - {9}\t{10} - {11} - {12}", (dataset.Replace("Dataset", "") + " (n=" + scores.Count + ")").PadRight(12), overall.a.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overall.mcc.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overall.c.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                    Console.WriteLine("  {0}\t{1}\t{2}\t{3}\t{4}\t\t{5} - {6} - {7}\t{8} - {9} - {10}\t{11} - {12} - {13}\t{14} - {15} - {16}", (dataset.Replace("Dataset", "") + " (n=" + scores.Count + ")").PadRight(12), overall.a.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overall.mcc.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overall.c.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), overall.auc.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                         scores.Select(x => x.Value.Item1).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item1).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item1).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
                         scores.Select(x => x.Value.Item2).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item2).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item2).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
-                        scores.Select(x => x.Value.Item3).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item3).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item3).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+                        scores.Select(x => x.Value.Item3).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item3).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item3).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture),
+                        scores.Select(x => x.Value.Item4).LowerQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item4).Median().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture), scores.Select(x => x.Value.Item4).UpperQuartile().ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
                 }
                 return (overall, scores);
             }

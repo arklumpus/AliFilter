@@ -190,7 +190,7 @@ namespace Figure_3
             double[][][] ranges = new int[] { 2, 0, 1 }.Select(i => trainingAlignments.Select(x => new double[] { data.Where(y => y.Item1 == x).Select(z => z.Item3[i]).Min(), data.Where(y => y.Item1 == x).Select(z => z.Item3[i]).Max() }).ToArray()).ToArray();
 
             // Create the plot.
-            Plot plot = Plot.Create.LineCharts(new double[][][] { new double[][] { new double[] { 1, 0 }, new double[] { 24, 1 } } }.Concat(medians).ToArray(), xAxisTitle: "Number of alignments", yAxisTitle: "Score",
+            Plot plot = Plot.Create.LineCharts(new double[][][] { new double[][] { new double[] { 1, 0.35 }, new double[] { 24, 1 } } }.Concat(medians).ToArray(), xAxisTitle: "Number of alignments", yAxisTitle: "Score",
                 linePresentationAttributes: new PlotElementPresentationAttributes[] { new PlotElementPresentationAttributes() }.Concat(scoreColours.Select(x => new PlotElementPresentationAttributes() { Fill = null, Stroke = BlendWithWhite(x, 0.35) })).ToArray());
 
             // Fine-tune the plot appearance.
@@ -353,6 +353,48 @@ namespace Figure_3
 
                 gpr.FillText(pt2.X - fnt.MeasureText("Training").Width - 15, pt2.Y + plot.GetFirst<ContinuousAxisLabels>().Position(0) - 1, "Training", fnt, Colours.Black);
                 gpr.FillText(pt2.X - fnt.MeasureText("Validation").Width - 15, pt2.Y + plot.GetAll<ContinuousAxisLabels>().ElementAt(2).Position(0) - 1, "Validation", fnt, Colours.Black);
+            }));
+
+            plot.GetAll<ContinuousAxisLabels>().ElementAt(1).StartPoint = new double[] { plot.GetAll<ContinuousAxisLabels>().ElementAt(1).StartPoint[0], 0.4 };
+            plot.GetAll<ContinuousAxisLabels>().ElementAt(1).IntervalCount = 6;
+
+            plot.GetAll<ContinuousAxisTicks>().ElementAt(1).StartPoint = new double[] { plot.GetAll<ContinuousAxisTicks>().ElementAt(1).StartPoint[0], 0.4 };
+            plot.GetAll<ContinuousAxisTicks>().ElementAt(1).IntervalCount = 12;
+
+            plot.GetAll<Grid>().ElementAt(2).Side1End = new double[] { plot.GetAll<Grid>().ElementAt(2).Side1End[0], 0.4 };
+            plot.GetAll<Grid>().ElementAt(2).Side2End = new double[] { plot.GetAll<Grid>().ElementAt(2).Side2End[0], 0.4 };
+            plot.GetAll<Grid>().ElementAt(2).IntervalCount = 6;
+            Grid[] grids = plot.GetAll<Grid>().ToArray();
+            
+            plot.AddPlotElement(new PlotElement<IReadOnlyList<double>>(plot.GetFirst<IContinuousCoordinateSystem>(), (gpr, coord) =>
+            {
+                double[][] pts = new double[][]
+                {
+                    new double[] { plot.GetAll<ContinuousAxis>().ElementAt(1).StartPoint[0], (0.4 + plot.GetAll<ContinuousAxis>().ElementAt(1).StartPoint[1]) * 0.5 }
+                };
+
+                Colour[] cols = new Colour[] { Colours.Black };
+
+                GraphicsPath symbolBg = new GraphicsPath().MoveTo(4, 4).LineTo(-4, -0).LineTo(-4, -4).LineTo(4, 0).Close();
+                GraphicsPath symbol = new GraphicsPath().MoveTo(4, 4).LineTo(-4, -0).MoveTo(-4, -4).LineTo(4, 0);
+
+                for (int i = 0; i < pts.Length; i++)
+                {
+                    Point pt = coord.ToPlotCoordinates(pts[i]);
+                    gpr.Save();
+                    gpr.Translate(pt);
+                    gpr.FillPath(symbolBg, Colours.White);
+                    gpr.Restore();
+                }
+
+                for (int i = 0; i < pts.Length; i++)
+                {
+                    Point pt = coord.ToPlotCoordinates(pts[i]);
+                    gpr.Save();
+                    gpr.Translate(pt);
+                    gpr.StrokePath(symbol, cols[i]);
+                    gpr.Restore();
+                }
             }));
 
             return plot.Render();

@@ -19,6 +19,7 @@
 */
 
 using AliFilter.AlignmentFormatting;
+using System.Runtime.InteropServices;
 
 namespace AliFilter
 {
@@ -46,8 +47,10 @@ namespace AliFilter
     /// <summary>
     /// Represents a sequence alignment.
     /// </summary>
-    public abstract class Alignment
+    public abstract class Alignment : IDisposable
     {
+        private bool disposedValue;
+
         /// <summary>
         /// Metadata associated with the alignment.
         /// </summary>
@@ -71,7 +74,7 @@ namespace AliFilter
         /// <summary>
         /// Contains the raw sequence data.
         /// </summary>
-        protected virtual char[] AlignmentData { get; }
+        protected virtual IntPtr AlignmentData { get; } = IntPtr.Zero;
 
         /// <summary>
         /// The names of the sequences in the alignment.
@@ -88,17 +91,14 @@ namespace AliFilter
         /// </summary>
         /// <param name="index">The index of the sequence to get.</param>
         /// <returns>The requested sequence, as a collection of <see langword="char"/>s.</returns>
-        public virtual IEnumerable<char> GetSequence(int index)
+        public virtual unsafe string GetSequence(int index)
         {
             if (index < 0 || index >= SequenceCount)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, "The index must range between 0 (inclusive) and the number of sequences in the alignment (exclusive)!");
             }
 
-            for (int i = 0; i < AlignmentLength; i++)
-            {
-                yield return AlignmentData[index * AlignmentLength + i];
-            }
+            return new string((char*)new IntPtr(AlignmentData.ToInt64() + (long)index * AlignmentLength), 0, AlignmentLength);
         }
 
         /// <summary>
@@ -139,35 +139,44 @@ namespace AliFilter
         /// </summary>
         /// <param name="index">The index of the column to get.</param>
         /// <returns>The requested column, as a collection of <see langword="char"/>s.</returns>
-        public virtual IEnumerable<char> GetColumn(int index)
+        public virtual unsafe char[] GetColumn(int index)
         {
             if (index < 0 || index >= AlignmentLength)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, "The index must range between 0 (inclusive) and the length of the alignment (exclusive)!");
             }
 
+            char[] tbr = new char[SequenceCount];
+
+            char* currPos = (char*)AlignmentData + index;
+
             for (int i = 0; i < SequenceCount; i++)
             {
-                yield return AlignmentData[i * AlignmentLength + index];
+                tbr[i] = *currPos;
+                currPos += AlignmentLength;
             }
+
+            return tbr;
         }
 
         /// <summary>
         /// Create a new <see cref="Alignment"/>.
         /// </summary>
         /// <param name="sequences">The sequences in the alignment.</param>
-        protected Alignment(IReadOnlyList<(string name, IEnumerable<char> sequence)> sequences)
+        protected unsafe Alignment(IReadOnlyList<(string name, IEnumerable<char> sequence)> sequences)
         {
             this.SequenceCount = sequences.Count;
             this.SequenceNames = new string[SequenceCount];
             Dictionary<string, int> sequenceNameIndices = new Dictionary<string, int>(SequenceCount);
             this.Tags = new Dictionary<string, object>();
 
+            char* alignmentDataPtr = (char*)IntPtr.Zero;
+
             for (int i = 0; i < SequenceCount; i++)
             {
                 IEnumerable<char> currSeq = sequences[i].sequence;
 
-                if (this.AlignmentData == null)
+                if (this.AlignmentData == IntPtr.Zero)
                 {
                     if (currSeq.TryGetNonEnumeratedCount(out int count))
                     {
@@ -180,7 +189,8 @@ namespace AliFilter
                         this.AlignmentLength = tempSeq.Length;
                     }
 
-                    this.AlignmentData = new char[this.AlignmentLength * this.SequenceCount];
+                    this.AlignmentData = new nint(NativeMemory.Alloc(new nuint((ulong)this.AlignmentLength * (ulong)this.SequenceCount), sizeof(char)));
+                    alignmentDataPtr = (char*)this.AlignmentData;
                 }
 
                 this.SequenceNames[i] = sequences[i].name;
@@ -190,8 +200,9 @@ namespace AliFilter
 
                 foreach (char c in currSeq)
                 {
-                    this.AlignmentData[this.AlignmentLength * i + j] = c;
+                    *alignmentDataPtr = c;
                     j++;
+                    alignmentDataPtr++;
                 }
 
                 if (j != this.AlignmentLength)
@@ -207,18 +218,20 @@ namespace AliFilter
         /// Create a new <see cref="Alignment"/>.
         /// </summary>
         /// <param name="sequences">The sequences in the alignment.</param>
-        protected Alignment(IReadOnlyList<KeyValuePair<string, IEnumerable<char>>> sequences)
+        protected unsafe Alignment(IReadOnlyList<KeyValuePair<string, IEnumerable<char>>> sequences)
         {
             this.SequenceCount = sequences.Count;
             this.SequenceNames = new string[SequenceCount];
             Dictionary<string, int> sequenceNameIndices = new Dictionary<string, int>(SequenceCount);
             this.Tags = new Dictionary<string, object>();
 
+            char* alignmentDataPtr = (char*)IntPtr.Zero;
+
             for (int i = 0; i < SequenceCount; i++)
             {
                 IEnumerable<char> currSeq = sequences[i].Value;
 
-                if (this.AlignmentData == null)
+                if (this.AlignmentData == IntPtr.Zero)
                 {
                     if (currSeq.TryGetNonEnumeratedCount(out int count))
                     {
@@ -231,7 +244,8 @@ namespace AliFilter
                         this.AlignmentLength = tempSeq.Length;
                     }
 
-                    this.AlignmentData = new char[this.AlignmentLength * this.SequenceCount];
+                    this.AlignmentData = new nint(NativeMemory.Alloc(new nuint((ulong)this.AlignmentLength * (ulong)this.SequenceCount), sizeof(char)));
+                    alignmentDataPtr = (char*)this.AlignmentData;
                 }
 
                 this.SequenceNames[i] = sequences[i].Key;
@@ -241,8 +255,9 @@ namespace AliFilter
 
                 foreach (char c in currSeq)
                 {
-                    this.AlignmentData[this.AlignmentLength * i + j] = c;
+                    *alignmentDataPtr = c;
                     j++;
+                    alignmentDataPtr++;
                 }
 
                 if (j != this.AlignmentLength)
@@ -259,19 +274,21 @@ namespace AliFilter
         /// </summary>
         /// <param name="sequenceCount">The number of sequences in the alignment.</param>
         /// <param name="sequences">The sequences in the alignment.</param>
-        protected Alignment(int sequenceCount, IEnumerable<(string name, IEnumerable<char> sequence)> sequences)
+        protected unsafe Alignment(int sequenceCount, IEnumerable<(string name, IEnumerable<char> sequence)> sequences)
         {
             this.SequenceCount = sequenceCount;
             this.SequenceNames = new string[SequenceCount];
             Dictionary<string, int> sequenceNameIndices = new Dictionary<string, int>(SequenceCount);
             this.Tags = new Dictionary<string, object>();
 
+            char* alignmentDataPtr = (char*)IntPtr.Zero;
+
             int i = 0;
             foreach ((string name, IEnumerable<char> sequence) in sequences)
             {
                 IEnumerable<char> currSeq = sequence;
 
-                if (this.AlignmentData == null)
+                if (this.AlignmentData == IntPtr.Zero)
                 {
                     if (currSeq.TryGetNonEnumeratedCount(out int count))
                     {
@@ -284,7 +301,8 @@ namespace AliFilter
                         this.AlignmentLength = tempSeq.Length;
                     }
 
-                    this.AlignmentData = new char[this.AlignmentLength * this.SequenceCount];
+                    this.AlignmentData = new nint(NativeMemory.Alloc(new nuint((ulong)this.AlignmentLength * (ulong)this.SequenceCount), sizeof(char)));
+                    alignmentDataPtr = (char*)this.AlignmentData;
                 }
 
                 this.SequenceNames[i] = name;
@@ -294,8 +312,9 @@ namespace AliFilter
 
                 foreach (char c in currSeq)
                 {
-                    this.AlignmentData[this.AlignmentLength * i + j] = c;
+                    *alignmentDataPtr = c;
                     j++;
+                    alignmentDataPtr++;
                 }
 
                 if (j != this.AlignmentLength)
@@ -314,19 +333,21 @@ namespace AliFilter
         /// </summary>
         /// <param name="sequenceCount">The number of sequences in the alignment.</param>
         /// <param name="sequences">The sequences in the alignment.</param>
-        protected Alignment(int sequenceCount, IEnumerable<KeyValuePair<string, IEnumerable<char>>> sequences)
+        protected unsafe Alignment(int sequenceCount, IEnumerable<KeyValuePair<string, IEnumerable<char>>> sequences)
         {
             this.SequenceCount = sequenceCount;
             this.SequenceNames = new string[SequenceCount];
             Dictionary<string, int> sequenceNameIndices = new Dictionary<string, int>(SequenceCount);
             this.Tags = new Dictionary<string, object>();
 
+            char* alignmentDataPtr = (char*)IntPtr.Zero;
+
             int i = 0;
             foreach (KeyValuePair<string, IEnumerable<char>> seq in sequences)
             {
                 IEnumerable<char> currSeq = seq.Value;
 
-                if (this.AlignmentData == null)
+                if (this.AlignmentData == IntPtr.Zero)
                 {
                     if (currSeq.TryGetNonEnumeratedCount(out int count))
                     {
@@ -339,7 +360,8 @@ namespace AliFilter
                         this.AlignmentLength = tempSeq.Length;
                     }
 
-                    this.AlignmentData = new char[this.AlignmentLength * this.SequenceCount];
+                    this.AlignmentData = new nint(NativeMemory.Alloc(new nuint((ulong)this.AlignmentLength * (ulong)this.SequenceCount), sizeof(char)));
+                    alignmentDataPtr = (char*)this.AlignmentData;
                 }
 
                 this.SequenceNames[i] = seq.Key;
@@ -349,8 +371,9 @@ namespace AliFilter
 
                 foreach (char c in currSeq)
                 {
-                    this.AlignmentData[this.AlignmentLength * i + j] = c;
+                    *alignmentDataPtr = c;
                     j++;
+                    alignmentDataPtr++;
                 }
 
                 if (j != this.AlignmentLength)
@@ -370,13 +393,13 @@ namespace AliFilter
         /// </summary>
         /// <param name="sequenceCount">The number of sequences in the alignment.</param>
         /// <param name="alignmentLength">The length of each sequence in the alignment.</param>
-        protected Alignment(int sequenceCount, int alignmentLength)
+        protected unsafe Alignment(int sequenceCount, int alignmentLength)
         {
             this.SequenceCount = sequenceCount;
             this.AlignmentLength = alignmentLength;
             this.SequenceNameIndices = new Dictionary<string, int>(SequenceCount);
             this.SequenceNames = new string[sequenceCount];
-            this.AlignmentData = new char[alignmentLength * sequenceCount];
+            this.AlignmentData = new nint(NativeMemory.Alloc(new nuint((ulong)alignmentLength * (ulong)sequenceCount), sizeof(char)));
             this.Tags = new Dictionary<string, object>();
         }
 
@@ -658,22 +681,27 @@ namespace AliFilter
         /// <summary>
         /// Cleans this <see cref="Alignment"/> by removing invalid characters.
         /// </summary>
-        public virtual void Clean()
+        public virtual unsafe void Clean()
         {
             HashSet<char> validCharacters = new HashSet<char>(this.Characters);
 
-            for (int i = 0; i < this.AlignmentData.Length; i++)
+            char* alignmentDataPtr = (char*)this.AlignmentData;
+            long count = (long)this.SequenceCount * this.AlignmentLength;
+            
+            for (long i = 0; i < count; i++)
             {
-                char c = Char.ToUpperInvariant(this.AlignmentData[i]);
+                char c = Char.ToUpperInvariant(alignmentDataPtr[0]);
 
                 if (validCharacters.Contains(c))
                 {
-                    this.AlignmentData[i] = c;
+                    alignmentDataPtr[0] = c;
                 }
                 else
                 {
-                    this.AlignmentData[i] = '-';
+                    alignmentDataPtr[0] = '-';
                 }
+
+                alignmentDataPtr++;
             }
         }
 
@@ -707,7 +735,7 @@ namespace AliFilter
         {
             random ??= new Random();
 
-            return Alignment.Create(this.SequenceCount, Enumerable.Range(0, this.SequenceCount).Select(_ => { int ind = random.Next(0, this.SequenceCount); return (this.SequenceNames[ind], this.GetSequence(ind)); }), this is DNAAlignment ? AlignmentType.DNA : this is ProteinAlignment ? AlignmentType.Protein : AlignmentType.Autodetect);
+            return Alignment.Create(this.SequenceCount, Enumerable.Range(0, this.SequenceCount).Select(_ => { int ind = random.Next(0, this.SequenceCount); return (this.SequenceNames[ind], (IEnumerable<char>)this.GetSequence(ind)); }), this is DNAAlignment ? AlignmentType.DNA : this is ProteinAlignment ? AlignmentType.Protein : AlignmentType.Autodetect);
         }
 
         /// <summary>
@@ -813,6 +841,31 @@ namespace AliFilter
         {
             FormatUtilities.GetAlignmentFormat(outputFormat).Write(outputFile, this);
         }
+
+        /// <inheritdoc/>
+        protected virtual unsafe void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                NativeMemory.Free((void*)AlignmentData);
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Frees memory held by the alignment.
+        /// </summary>
+        ~Alignment()
+        {
+            Dispose(disposing: false);
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 
     /// <summary>
@@ -872,7 +925,7 @@ namespace AliFilter
         }
 
         /// <inheritdoc/>
-        public override DNAAlignment Clone()
+        public override unsafe DNAAlignment Clone()
         {
             DNAAlignment clone = new DNAAlignment(this.SequenceCount, this.AlignmentLength);
 
@@ -882,10 +935,8 @@ namespace AliFilter
                 ((Dictionary<string, int>)clone.SequenceNameIndices)[this.SequenceNames[i]] = i;
             }
 
-            for (int i = 0; i < this.AlignmentData.Length; i++)
-            {
-                clone.AlignmentData[i] = this.AlignmentData[i];
-            }
+            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength;
+            NativeMemory.Copy((void*)this.AlignmentData, (void*)clone.AlignmentData, new nuint(memorySize));
 
             foreach (KeyValuePair<string, object> kvp in this.Tags)
             {
@@ -903,15 +954,15 @@ namespace AliFilter
         }
 
         /// <inheritdoc/>
-        public override DNAAlignment RemoveSequences(IEnumerable<int> sequencesToRemove)
+        public override unsafe DNAAlignment RemoveSequences(IEnumerable<int> sequencesToRemove)
         {
             HashSet<int> actualSequencesToRemove = new HashSet<int>(sequencesToRemove);
 
-            return new DNAAlignment(this.SequenceCount - actualSequencesToRemove.Count, this.SequenceNames.Select((x, i) => (x, i)).Where(x => !actualSequencesToRemove.Contains(x.i)).Select(x => (x.x, this.GetSequence(x.i))));
+            return new DNAAlignment(this.SequenceCount - actualSequencesToRemove.Count, this.SequenceNames.Select((x, i) => (x, i)).Where(x => !actualSequencesToRemove.Contains(x.i)).Select(x => (x.x, (IEnumerable<char>)this.GetSequence(x.i))));
         }
 
         /// <inheritdoc/>
-        public override DNAAlignment Subset(IReadOnlyList<int> sequenceIndices)
+        public override unsafe DNAAlignment Subset(IReadOnlyList<int> sequenceIndices)
         {
             DNAAlignment tbr = new DNAAlignment(sequenceIndices.Count, this.AlignmentLength);
 
@@ -919,10 +970,10 @@ namespace AliFilter
             {
                 tbr.SequenceNames[i] = this.SequenceNames[sequenceIndices[i]];
                 ((Dictionary<string, int>)tbr.SequenceNameIndices)[this.SequenceNames[sequenceIndices[i]]] = i;
-                for (int j = 0; j < this.AlignmentLength; j++)
-                {
-                    tbr.AlignmentData[i * this.AlignmentLength + j] = this.AlignmentData[sequenceIndices[i] * this.AlignmentLength + j];
-                }
+
+                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength);
+                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength);
+                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength));
             }
 
             return tbr;
@@ -1005,7 +1056,7 @@ namespace AliFilter
         }
 
         /// <inheritdoc/>
-        public override ProteinAlignment Clone()
+        public override unsafe ProteinAlignment Clone()
         {
             ProteinAlignment clone = new ProteinAlignment(this.SequenceCount, this.AlignmentLength);
 
@@ -1015,10 +1066,9 @@ namespace AliFilter
                 ((Dictionary<string, int>)clone.SequenceNameIndices)[this.SequenceNames[i]] = i;
             }
 
-            for (int i = 0; i < this.AlignmentData.Length; i++)
-            {
-                clone.AlignmentData[i] = this.AlignmentData[i];
-            }
+            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength;
+
+            NativeMemory.Copy((void*)this.AlignmentData, (void*)clone.AlignmentData, new nuint(memorySize));
 
             foreach (KeyValuePair<string, object> kvp in this.Tags)
             {
@@ -1040,11 +1090,11 @@ namespace AliFilter
         {
             HashSet<int> actualSequencesToRemove = new HashSet<int>(sequencesToRemove);
 
-            return new ProteinAlignment(this.SequenceCount - actualSequencesToRemove.Count, this.SequenceNames.Select((x, i) => (x, i)).Where(x => !actualSequencesToRemove.Contains(x.i)).Select(x => (x.x, this.GetSequence(x.i))));
+            return new ProteinAlignment(this.SequenceCount - actualSequencesToRemove.Count, this.SequenceNames.Select((x, i) => (x, i)).Where(x => !actualSequencesToRemove.Contains(x.i)).Select(x => (x.x, (IEnumerable<char>)this.GetSequence(x.i))));
         }
 
         /// <inheritdoc/>
-        public override Alignment Subset(IReadOnlyList<int> sequenceIndices)
+        public override unsafe Alignment Subset(IReadOnlyList<int> sequenceIndices)
         {
             ProteinAlignment tbr = new ProteinAlignment(sequenceIndices.Count, this.AlignmentLength);
 
@@ -1052,10 +1102,10 @@ namespace AliFilter
             {
                 tbr.SequenceNames[i] = this.SequenceNames[sequenceIndices[i]];
                 ((Dictionary<string, int>)tbr.SequenceNameIndices)[this.SequenceNames[sequenceIndices[i]]] = i;
-                for (int j = 0; j < this.AlignmentLength; j++)
-                {
-                    tbr.AlignmentData[i * this.AlignmentLength + j] = this.AlignmentData[sequenceIndices[i] * this.AlignmentLength + j];
-                }
+
+                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength);
+                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength);
+                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength));
             }
 
             return tbr;

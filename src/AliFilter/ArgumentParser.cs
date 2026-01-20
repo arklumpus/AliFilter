@@ -520,10 +520,6 @@ namespace AliFilter
                 OutputLog?.WriteLine("            [--test-out <test list file>] [--input format <format>] [-q]");
                 OutputLog?.WriteLine("    Suggest alignments that should be used for training, validation, and test.");
                 OutputLog?.WriteLine();
-                OutputLog?.WriteLine("  AliFilter --evaluate <training feature file> <test feature file>");
-                OutputLog?.WriteLine("            [-p <max threads>] [-q]");
-                OutputLog?.WriteLine("    Evaluate a dataset, estimating its proportion of inconsistencies.");
-                OutputLog?.WriteLine();
                 OutputLog?.WriteLine("  AliFilter [-i <input alignment>] --mask <input mask> -o <output feature file>");
                 OutputLog?.WriteLine("            [-v] [-t <alignment type>] [--input format <format>] [-a]");
                 OutputLog?.WriteLine("            [--remove {sequence name|list file}] [--keep <list file>]");

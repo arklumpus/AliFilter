@@ -98,7 +98,7 @@ namespace AliFilter
                 throw new ArgumentOutOfRangeException(nameof(index), index, "The index must range between 0 (inclusive) and the number of sequences in the alignment (exclusive)!");
             }
 
-            return new string((char*)new IntPtr(AlignmentData.ToInt64() + (long)index * AlignmentLength), 0, AlignmentLength);
+            return new string((char*)new IntPtr(AlignmentData.ToInt64() + (long)index * AlignmentLength * sizeof(char)), 0, AlignmentLength);
         }
 
         /// <summary>
@@ -935,7 +935,7 @@ namespace AliFilter
                 ((Dictionary<string, int>)clone.SequenceNameIndices)[this.SequenceNames[i]] = i;
             }
 
-            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength;
+            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength * sizeof(char);
             NativeMemory.Copy((void*)this.AlignmentData, (void*)clone.AlignmentData, new nuint(memorySize));
 
             foreach (KeyValuePair<string, object> kvp in this.Tags)
@@ -971,9 +971,9 @@ namespace AliFilter
                 tbr.SequenceNames[i] = this.SequenceNames[sequenceIndices[i]];
                 ((Dictionary<string, int>)tbr.SequenceNameIndices)[this.SequenceNames[sequenceIndices[i]]] = i;
 
-                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength);
-                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength);
-                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength));
+                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength * sizeof(char));
+                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength * sizeof(char));
+                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength * sizeof(char)));
             }
 
             return tbr;
@@ -1066,7 +1066,7 @@ namespace AliFilter
                 ((Dictionary<string, int>)clone.SequenceNameIndices)[this.SequenceNames[i]] = i;
             }
 
-            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength;
+            ulong memorySize = (ulong)this.SequenceCount * (ulong)this.AlignmentLength * sizeof(char);
 
             NativeMemory.Copy((void*)this.AlignmentData, (void*)clone.AlignmentData, new nuint(memorySize));
 
@@ -1103,9 +1103,9 @@ namespace AliFilter
                 tbr.SequenceNames[i] = this.SequenceNames[sequenceIndices[i]];
                 ((Dictionary<string, int>)tbr.SequenceNameIndices)[this.SequenceNames[sequenceIndices[i]]] = i;
 
-                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength);
-                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength);
-                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength));
+                char* source = (char*)new nuint((ulong)this.AlignmentData.ToInt64() + (ulong)sequenceIndices[i] * (ulong)this.AlignmentLength * sizeof(char));
+                char* destination = (char*)new nuint((ulong)tbr.AlignmentData.ToInt64() + (ulong)i * (ulong)this.AlignmentLength * sizeof(char));
+                NativeMemory.Copy(source, destination, new nuint((ulong)this.AlignmentLength * sizeof(char)));
             }
 
             return tbr;

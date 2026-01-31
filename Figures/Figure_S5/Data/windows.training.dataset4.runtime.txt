@@ -1,0 +1,3 @@
+training 1524.6089
+validation 9290.4197
+test 666.4573

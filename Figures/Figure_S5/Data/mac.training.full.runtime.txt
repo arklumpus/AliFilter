@@ -1,0 +1,3 @@
+training 30160
+validation 3294030
+test 50750

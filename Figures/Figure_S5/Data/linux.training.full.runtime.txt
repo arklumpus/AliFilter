@@ -1,0 +1,3 @@
+training 43850
+validation 138770
+test 16050

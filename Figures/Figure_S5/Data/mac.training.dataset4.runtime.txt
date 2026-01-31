@@ -1,0 +1,3 @@
+training 2520
+validation 8350
+test 650

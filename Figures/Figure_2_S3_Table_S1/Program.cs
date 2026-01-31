@@ -28,11 +28,20 @@ using VectSharp.Plots;
 using VectSharp.Raster;
 using VectSharp.SVG;
 
-namespace Figure2_Table_S1
+namespace Figure2_S3_Table_S1
 {
     internal class Program
     {
         static void Main(string[] args)
+        {
+            // Create Figure 2 and print Table S1
+            CreateFigure2_TableS1();
+
+            // Create Figure S3 and print the final lines of Table S1
+            FigureS3.CreateFigureS3();
+        }
+
+        static void CreateFigure2_TableS1()
         {
             // Create the plots.
             Page fig2a = CreateFigure2a();
@@ -624,7 +633,7 @@ namespace Figure2_Table_S1
         /// <param name="dataset">The dataset.</param>
         /// <param name="print">Whether the scores should be printed to the standard output.</param>
         /// <returns>The scores of the default AliFilter model against the specified dataset.</returns>
-        private static ((double a, double mcc, double c, double auc), Dictionary<string, (double a, double mcc, double c, double auc)>) ReadScores(string dataset, bool print)
+        internal static ((double a, double mcc, double c, double auc), Dictionary<string, (double a, double mcc, double c, double auc)>) ReadScores(string dataset, bool print)
         {
             using (StreamReader sr = new StreamReader("../../../Data/" + dataset + ".txt"))
             {
@@ -665,7 +674,7 @@ namespace Figure2_Table_S1
         /// <param name="col">The colour to blend.</param>
         /// <param name="percentage">The colour intensity (1 is white, 0 is col).</param>
         /// <returns>The blended colour.</returns>
-        private static Colour BlendWithWhite(Colour col, double percentage)
+        internal static Colour BlendWithWhite(Colour col, double percentage)
         {
             return Colour.FromRgb(col.R * percentage + 1 - percentage, col.G * percentage + 1 - percentage, col.B * percentage + 1 - percentage);
         }

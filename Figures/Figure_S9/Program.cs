@@ -26,7 +26,7 @@ using VectSharp.Plots;
 using VectSharp.Raster;
 using VectSharp.SVG;
 
-namespace Figure_S6
+namespace Figure_S9
 {
     internal partial class Program
     {
@@ -36,42 +36,42 @@ namespace Figure_S6
             Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
             Thread.CurrentThread.CurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
 
-            Page figureS6a = CreateFigureS6a();
-            Page figureS6b = CreateFigureS6b();
-            Page figureS6c = CreateFigureS6c();
+            Page figureS9a = CreateFigureS9a();
+            Page figureS9b = CreateFigureS9b();
+            Page figureS9c = CreateFigureS9c();
 
             Font partLetterFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 20);
 
-            Page figureS6 = new Page(1, 1);
+            Page figureS9 = new Page(1, 1);
 
-            figureS6.Graphics.FillText(0, 0, "a)", partLetterFont, Colours.Black);
-            figureS6.Graphics.DrawGraphics(0, 0, figureS6a.Graphics);
+            figureS9.Graphics.FillText(0, 0, "a)", partLetterFont, Colours.Black);
+            figureS9.Graphics.DrawGraphics(0, 0, figureS9a.Graphics);
 
-            figureS6.Graphics.FillText(figureS6a.Width + 5, 0, "b)", partLetterFont, Colours.Black);
-            figureS6.Graphics.DrawGraphics(figureS6a.Width, 0, figureS6b.Graphics);
+            figureS9.Graphics.FillText(figureS9a.Width + 5, 0, "b)", partLetterFont, Colours.Black);
+            figureS9.Graphics.DrawGraphics(figureS9a.Width, 0, figureS9b.Graphics);
 
-            figureS6.Graphics.FillText(0, figureS6a.Height + 10, "c)", partLetterFont, Colours.Black);
-            figureS6.Graphics.DrawGraphics(0, figureS6a.Height + 10, figureS6c.Graphics);
+            figureS9.Graphics.FillText(0, figureS9a.Height + 10, "c)", partLetterFont, Colours.Black);
+            figureS9.Graphics.DrawGraphics(0, figureS9a.Height + 10, figureS9c.Graphics);
 
-            figureS6.Crop();
+            figureS9.Crop();
 
             // Resize to a width of 17cm.
-            Page finalFigureS6 = new Page(482, figureS6.Height * 482 / figureS6.Width);
-            finalFigureS6.Background = Colours.White;
-            finalFigureS6.Graphics.Scale(482 / figureS6.Width, 482 / figureS6.Width);
-            finalFigureS6.Graphics.DrawGraphics(0, 0, figureS6.Graphics);
+            Page finalFigureS9 = new Page(482, figureS9.Height * 482 / figureS9.Width);
+            finalFigureS9.Background = Colours.White;
+            finalFigureS9.Graphics.Scale(482 / figureS9.Width, 482 / figureS9.Width);
+            finalFigureS9.Graphics.DrawGraphics(0, 0, figureS9.Graphics);
 
             Document doc = new Document();
-            doc.Pages.Add(finalFigureS6);
+            doc.Pages.Add(finalFigureS9);
 
-            finalFigureS6.SaveAsSVG("Figure_S6.svg");
-            finalFigureS6.SaveAsSVG("Figure_S6.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
-            doc.SaveAsPDF("Figure_S6.pdf");
-            finalFigureS6.SaveAsPNG("Figure_S6.png", 600.0 / 72);
+            finalFigureS9.SaveAsSVG("Figure_S9.svg");
+            finalFigureS9.SaveAsSVG("Figure_S9.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
+            doc.SaveAsPDF("Figure_S9.pdf");
+            finalFigureS9.SaveAsPNG("Figure_S9.png", 600.0 / 72);
         }
 
 
-        static Page CreateFigureS6a()
+        static Page CreateFigureS9a()
         {
             // Read the alignment length data.
             (string toolName, int totalLength, int distinct, int parsInformative)[] alignmentData = ReadAlignmentLengths().OrderByDescending(x => x.totalLength).ToArray();

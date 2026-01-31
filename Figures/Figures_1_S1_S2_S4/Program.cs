@@ -20,7 +20,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-namespace Figures_1_S1_S2_S3
+namespace Figures_1_S1_S2_S4
 {
     internal partial class Program
     {
@@ -29,7 +29,7 @@ namespace Figures_1_S1_S2_S3
             CreateFigure1();
             CreateFigureS1();
             CreateFigureS2();
-            CreateFigureS3();
+            CreateFigureS4();
         }
     }
 }

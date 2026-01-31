@@ -25,7 +25,7 @@ using VectSharp;
 using VectSharp.PDF;
 using VectSharp.Raster;
 
-namespace Figures_5_S4_S5_Table_S2
+namespace Figures_5_S7_S8_Table_S2
 {
     internal static partial class Program
     {
@@ -41,11 +41,11 @@ namespace Figures_5_S4_S5_Table_S2
             // Create Figure 5.
             CreateFigure5();
 
-            // Create Figure S4.
-            CreateFigureS4();
+            // Create Figure S7.
+            CreateFigureS7();
 
-            // Create Figure S5.
-            CreateFigureS5();
+            // Create Figure S8.
+            CreateFigureS8();
         }
 
         static void CreateFigure5()

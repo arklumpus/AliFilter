@@ -5,7 +5,7 @@
 
     Source code for manuscript figures.
 
-    Copyright (C) 2025  Giorgio Bianchini
+    Copyright (C) 2024  Giorgio Bianchini
  
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,19 +22,19 @@
 
 using PhyloTree.Formats;
 using PhyloTree;
-using VectSharp.Plots;
 using VectSharp;
+using VectSharp.Plots;
 
-namespace Figure_S6
+namespace Figures_5_S7_S8_Table_S2
 {
-    internal partial class Program
+    internal static partial class Program
     {
         /// <summary>
-        /// Create Figure S6c.
+        /// Create Figure 5b.
         /// </summary>
         /// <param name="useCache">If this is true, the results of each step are cached and reused, in order to make it easier to make small changes to the code without having to recompute everything.</param>
-        /// <returns>The <see cref="Page"/> on which Figure S6c has been rendered.</returns>
-        static Page CreateFigureS6c(bool useCache = true)
+        /// <returns>The <see cref="Page"/> on which Figure 5b has been rendered.</returns>
+        static Page CreateFigure5b(bool useCache = true)
         {
             // Number of replicate ML analyses for each tool.
             int replicates = 3;
@@ -51,7 +51,8 @@ namespace Figure_S6
                 { "trimal",    Colour.FromRgb(238, 221, 136) },
                 { "gblocks",    Colour.FromRgb(255, 170, 187) },
                 { "noisy",   Colour.FromRgb(153, 221, 255) },
-                { "clipkit",   Colour.FromRgb(187, 204, 51) }
+                { "clipkit",   Colour.FromRgb(187, 204, 51) },
+                { "gb",   Colour.FromRgb(128, 128, 128) },
             };
 
             // Symbols for each tool.
@@ -81,19 +82,21 @@ namespace Figure_S6
                 { "trimal", (triangle, false, 4) },
                 { "gblocks", (circle, false, 4.5) },
                 { "noisy", (diamond, false, 5) },
-                { "clipkit", (square, false, 3.5) }
+                { "clipkit", (square, false, 3.5) },
+                { "gb", (square, true, 3.5) },
             };
 
             // Manually fixed positions for the tool names.
             Dictionary<string, (double[], double[])> toolNamePositions = new Dictionary<string, (double[], double[])>()
             {
-                { "raw", (new double[] { -0.05, 0.11 }, new double[] { -0.055, 0.01 }) },
-                { "alifilter", (new double[] { 0.03, 0.04 }, new double[] { -0.027, -0.03 }) },
-                { "bmge", (new double[] { 0.06, 0 }, new double[]{ -0.014, -0.041 }) },
-                { "trimal", (new double[] { 0.12, -0.075 }, new double[] { 0.035, -0.075 }) },
-                { "gblocks", (new double[] { 0.22, 0.13 }, new double[] { 0.23, 0.09 }) },
-                { "noisy", (new double[] { -0.01, 0.17 }, new double[] { -0.07, 0.17 }) },
-                { "clipkit", (new double[] { 0, 0.08 }, new double[] { -0.04, 0.005 }) }
+                { "raw", (new double[] { 0, -0.2 }, new double[] { -0.05, -0.11 }) },
+                { "alifilter", (new double[] { 0.27, -0.11 }, new double[] { 0.1, -0.10 }) },
+                { "bmge", (new double[] { 0.09, 0.11 }, new double[]{ 0.08, 0.05 }) },
+                { "trimal", (new double[] { 0.32, 0.01 }, new double[] { 0.19, 0 }) },
+                { "gblocks", (new double[] { 0.10, 0.18 }, new double[] { 0.21, 0.20 }) },
+                { "noisy", (new double[] { -0.35, 0 }, new double[] { -0.44, 0.08 }) },
+                { "clipkit", (new double[] { -0.05, 0.05 }, new double[] { -0.03, -0.02 }) },
+                { "gb", (new double[] { 0.17, -0.21 }, new double[] { 0.09, -0.15 }) }
             };
 
             Dictionary<string, string> toolNames = new Dictionary<string, string>()
@@ -104,16 +107,17 @@ namespace Figure_S6
                 { "trimal", "trimAl" },
                 { "gblocks", "Gblocks" },
                 { "noisy", "Noisy" },
-                { "clipkit", "ClipKIT" }
+                { "clipkit", "ClipKIT" },
+                { "gb", "Manual" }
             };
 
-            string[] tools = new string[] { "raw", "alifilter", "bmge", "trimal", "gblocks", "noisy", "clipkit" };
+            string[] tools = new string[] { "raw", "alifilter", "bmge", "trimal", "gblocks", "noisy", "clipkit", "gb" };
 
             // Compute the 2D tree coordinates induced by the Frobenius distance metric.
             double[][] treeCoordinates = GetTreeCoordinatesFrobenius(useCache, tools, sampleSize, replicates);
 
             // Create the scatter plot.
-            Plot plot = Plot.Create.ScatterPlot(treeCoordinates, width: 760, xAxisTitle: "Coordinate 1", yAxisTitle: "Coordinate 2");
+            Plot plot = Plot.Create.ScatterPlot(treeCoordinates, width: 450, xAxisTitle: "Coordinate 1", yAxisTitle: "Coordinate 2");
 
             // Fine-tune the plot appearance.
             plot.RemovePlotElement(plot.GetFirst<ScatterPoints<IReadOnlyList<double>>>());
@@ -230,15 +234,15 @@ namespace Figure_S6
         {
             double[][] treeCoordinates;
 
-            if (!useCache || !File.Exists("Cache/FigureS6c_coordinates.txt"))
+            if (!useCache || !File.Exists("Cache/Figure5b_coordinates.txt"))
             {
                 float[][] distanceMatrixOfTrees;
 
-                if (!useCache || !File.Exists("Cache/FigureS6c_distMat.bin"))
+                if (!useCache || !File.Exists("Cache/Figure5b_distMat.bin"))
                 {
                     TreeNode[][] subsampledTrees;
 
-                    if (!useCache || !File.Exists("Cache/FigureS6c_raw.tbi"))
+                    if (!useCache || !File.Exists("Cache/Figure5b_raw.tbi"))
                     {
                         // Step 1: subsample the UFBoot replicates, only preserving the requested number of trees.
 
@@ -254,7 +258,7 @@ namespace Figure_S6
                             Directory.CreateDirectory("Cache");
                             for (int i = 0; i < tools.Length; i++)
                             {
-                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/FigureS6c_" + tools[i] + ".tbi");
+                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/Figure5b_" + tools[i] + ".tbi");
                             }
                         }
                     }
@@ -265,7 +269,7 @@ namespace Figure_S6
 
                         for (int i = 0; i < tools.Length; i++)
                         {
-                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/FigureS6c_" + tools[i] + ".tbi").ToArray();
+                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/Figure5b_" + tools[i] + ".tbi").ToArray();
                         }
                     }
 
@@ -283,13 +287,13 @@ namespace Figure_S6
                     if (useCache)
                     {
                         // Save the computed distance matrix in the cache.
-                        SaveDistanceMatrix("Cache/FigureS6c_distMat.bin", distanceMatrixOfTrees);
+                        SaveDistanceMatrix("Cache/Figure5b_distMat.bin", distanceMatrixOfTrees);
                     }
                 }
                 else
                 {
                     // Reuse the cached distance matrix of trees.
-                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/FigureS6c_distMat.bin");
+                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/Figure5b_distMat.bin");
                 }
 
                 // Step 3: use the distance matrix of trees to perform a classical MDS extracting the first two coordinates.
@@ -298,13 +302,13 @@ namespace Figure_S6
                 if (useCache)
                 {
                     // Save the tree coordinates.
-                    SaveTreeCoordinates("Cache/FigureS6c_coordinates.txt", treeCoordinates);
+                    SaveTreeCoordinates("Cache/Figure5b_coordinates.txt", treeCoordinates);
                 }
             }
             else
             {
                 // Reuse the cached coordinates.
-                treeCoordinates = ReadTreeCoordinates("Cache/FigureS6c_coordinates.txt");
+                treeCoordinates = ReadTreeCoordinates("Cache/Figure5b_coordinates.txt");
             }
 
             return treeCoordinates;

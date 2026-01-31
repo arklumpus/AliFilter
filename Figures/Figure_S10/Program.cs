@@ -20,44 +20,50 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+using System.Diagnostics;
 using VectSharp;
 using VectSharp.PDF;
 using VectSharp.Raster;
 using VectSharp.SVG;
 
-namespace Figures_5_S4_S5_Table_S2
+namespace Figure_S10
 {
-    internal static partial class Program
+    internal class Program
     {
+        static void Main(string[] args)
+        {
+            CreateFigureS10();
+        }
+
         /// <summary>
-        /// Create Figure S5.
+        /// Create Figure S10.
         /// </summary>
         /// <param name="useCache">If this is true, the results of each step are cached and reused, in order to make it easier to make small changes to the code without having to recompute everything.</param>
-        /// <returns>The <see cref="Page"/> on which Figure S5 has been rendered.</returns>
-        static void CreateFigureS5(bool useCache = true)
+        static void CreateFigureS10(bool useCache = true)
         {
             // Names of the tree files.
-            List<string> allTrees = new List<string> { "reference", "raw", "alifilter", "bmge", "trimal", "gblocks", "noisy", "clipkit", "gb" };
-            
+            List<string> allTrees = new List<string> { "reference", "raw", "alifilter", "bmge", "trimal", "gblocks", "noisy", "clipkit" };
+
             // Get the trees rendered by TreeViewer.
             Page[] allTreePages = new Page[allTrees.Count];
 
             for (int i = 0; i < allTrees.Count; i++)
             {
-                if (!useCache || !File.Exists("Cache/FigureS5_" + allTrees[i] + ".svg"))
+                if (!useCache || !File.Exists("Cache/FigureS10_" + allTrees[i] + ".svg"))
                 {
+                    Directory.CreateDirectory("Cache");
                     Console.WriteLine("Creating tree plot for " + allTrees[i] + "...");
-                    CreateTreeViewerPlot("../../../Data/Trees/Nostocales/" + allTrees[i] + ".tbi", "Cache/FigureS5_" + allTrees[i] + ".svg");
+                    CreateTreeViewerPlot("../../../Data/" + allTrees[i] + ".tbi", "Cache/FigureS10_" + allTrees[i] + ".svg");
                 }
-                allTreePages[i] = Parser.FromFile("Cache/FigureS5_" + allTrees[i] + ".svg");
+                allTreePages[i] = Parser.FromFile("Cache/FigureS10_" + allTrees[i] + ".svg");
             }
 
             // Rows for the figure.
             string[][] rows = new string[][]
             {
-                new string[] { "reference", "noisy" },
-                new string[] { "raw", "gb", "clipkit" },
-                new string[] { "bmge", "gblocks", "trimal", "alifilter" },
+                new string[] { "raw", "alifilter", "bmge" },
+                new string[] { "clipkit", "trimal", "noisy" },
+                new string[] { "gblocks", "reference" },
             };
 
             // Colour to use for each tool.
@@ -70,7 +76,6 @@ namespace Figures_5_S4_S5_Table_S2
                 { "gblocks",    Colour.FromRgb(255, 170, 187) },
                 { "noisy",   Colour.FromRgb(153, 221, 255) },
                 { "clipkit",   Colour.FromRgb(187, 204, 51) },
-                { "gb",   Colour.FromRgb(128, 128, 128) },
             };
 
             // Symbols for each tool.
@@ -100,8 +105,7 @@ namespace Figures_5_S4_S5_Table_S2
                 { "trimal", (triangle, false, 4) },
                 { "gblocks", (circle, false, 4.5) },
                 { "noisy", (diamond, false, 5) },
-                { "clipkit", (square, false, 3.5) },
-                { "gb", (square, true, 3.5) },
+                { "clipkit", (square, false, 3.5) }
             };
 
             // Manually fixed positions for the tool names.
@@ -113,8 +117,7 @@ namespace Figures_5_S4_S5_Table_S2
                 { "trimal", (new double[] { 0.32, 0.01 }, new double[] { 0.19, 0 }) },
                 { "gblocks", (new double[] { 0.10, 0.18 }, new double[] { 0.21, 0.20 }) },
                 { "noisy", (new double[] { -0.35, 0 }, new double[] { -0.44, 0.08 }) },
-                { "clipkit", (new double[] { -0.05, 0.05 }, new double[] { -0.03, -0.02 }) },
-                { "gb", (new double[] { 0.17, -0.21 }, new double[] { 0.09, -0.15 }) }
+                { "clipkit", (new double[] { -0.05, 0.05 }, new double[] { -0.03, -0.02 }) }
             };
 
             Dictionary<string, string> toolNames = new Dictionary<string, string>()
@@ -126,13 +129,12 @@ namespace Figures_5_S4_S5_Table_S2
                 { "gblocks", "Gblocks" },
                 { "noisy", "Noisy" },
                 { "clipkit", "ClipKIT" },
-                { "gb", "Manual" },
-                { "reference", "Reference (Strunecký et al., 2023)" }
+                { "reference", "Reference (Yu et al., 2024)" }
             };
 
             Font toolFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 12);
 
-            double maxWidth = rows.Select(x => (x.Length - 1) * 10 + x.Select(y => allTreePages[allTrees.IndexOf(y)].Width).Sum()).Max();
+            double maxWidth = rows.Select(x => x.Select(y => allTreePages[allTrees.IndexOf(y)].Width).Sum()).Max();
 
             Page compositePage = new Page(1, 1);
 
@@ -197,23 +199,23 @@ namespace Figures_5_S4_S5_Table_S2
 
             // Draw the paths that separate trees with the same topologies
             GraphicsPath topology1Path = new GraphicsPath();
-            topology1Path.MoveTo(maxWidth, -10);
-            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width - columnMargins[0] / 3, -10);
-            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width - columnMargins[0] / 3, allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 0.5);
-            topology1Path.LineTo(0, allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 0.5);
-            topology1Path.LineTo(0, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin);
-            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("alifilter")].Width - columnMargins[2] / 3, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin);
-            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("alifilter")].Width - columnMargins[2] / 3, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 2 + allTreePages[allTrees.IndexOf("alifilter")].Height);
-            topology1Path.LineTo(maxWidth, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 2 + allTreePages[allTrees.IndexOf("alifilter")].Height);
+            topology1Path.MoveTo(0, -10);
+            topology1Path.LineTo(maxWidth, -10);
+            topology1Path.LineTo(maxWidth, allTreePages[allTrees.IndexOf("bmge")].Height);
+            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width - 10, allTreePages[allTrees.IndexOf("bmge")].Height);
+            topology1Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width - 10, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin);
+            topology1Path.LineTo(0, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin);
             topology1Path.Close();
 
             compositePage.Graphics.StrokePath(topology1Path, Colours.Black, 2);
 
             GraphicsPath topology2Path = new GraphicsPath();
-            topology2Path.MoveTo(allTreePages[allTrees.IndexOf("bmge")].Width + columnMargins[2] / 3, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 1.5);
-            topology2Path.LineTo(allTreePages[allTrees.IndexOf("bmge")].Width + allTreePages[allTrees.IndexOf("gblocks")].Width + allTreePages[allTrees.IndexOf("trimal")].Width + columnMargins[2] * 2, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 1.5);
-            topology2Path.LineTo(allTreePages[allTrees.IndexOf("bmge")].Width + allTreePages[allTrees.IndexOf("gblocks")].Width + allTreePages[allTrees.IndexOf("trimal")].Width + columnMargins[2] * 2, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 2 + allTreePages[allTrees.IndexOf("trimal")].Height);
-            topology2Path.LineTo(allTreePages[allTrees.IndexOf("bmge")].Width + columnMargins[2] / 3, allTreePages[allTrees.IndexOf("raw")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 2 + allTreePages[allTrees.IndexOf("trimal")].Height);
+            topology2Path.MoveTo(maxWidth, allTreePages[allTrees.IndexOf("bmge")].Height + rowMargin * 0.5);
+            topology2Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width, allTreePages[allTrees.IndexOf("bmge")].Height + rowMargin * 0.5);
+            topology2Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("noisy")].Width, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 1.5);
+            topology2Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("reference")].Width, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + rowMargin * 1.5);
+            topology2Path.LineTo(maxWidth - allTreePages[allTrees.IndexOf("reference")].Width, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + allTreePages[allTrees.IndexOf("reference")].Height + rowMargin * 2);
+            topology2Path.LineTo(maxWidth, allTreePages[allTrees.IndexOf("bmge")].Height + allTreePages[allTrees.IndexOf("noisy")].Height + allTreePages[allTrees.IndexOf("reference")].Height + rowMargin * 2);
             topology2Path.Close();
 
             compositePage.Graphics.StrokePath(topology2Path, Colours.Black, 2);
@@ -221,18 +223,49 @@ namespace Figures_5_S4_S5_Table_S2
             compositePage.Crop();
 
             // Resize to a width of 17cm.
-            Page finalFigureS5 = new Page(482, compositePage.Height * 482 / compositePage.Width);
-            finalFigureS5.Background = Colours.White;
-            finalFigureS5.Graphics.Scale(482 / compositePage.Width, 482 / compositePage.Width);
-            finalFigureS5.Graphics.DrawGraphics(0, 0, compositePage.Graphics);
+            Page finalFigureS10 = new Page(482, compositePage.Height * 482 / compositePage.Width);
+            finalFigureS10.Background = Colours.White;
+            finalFigureS10.Graphics.Scale(482 / compositePage.Width, 482 / compositePage.Width);
+            finalFigureS10.Graphics.DrawGraphics(0, 0, compositePage.Graphics);
 
             Document doc = new Document();
-            doc.Pages.Add(finalFigureS5);
+            doc.Pages.Add(finalFigureS10);
 
-            finalFigureS5.SaveAsSVG("Figure_S5.svg");
-            finalFigureS5.SaveAsSVG("Figure_S5.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
-            doc.SaveAsPDF("Figure_S5.pdf");
-            finalFigureS5.SaveAsPNG("Figure_S5.png", 600.0 / 72);
+            finalFigureS10.SaveAsSVG("Figure_S10.svg");
+            finalFigureS10.SaveAsSVG("Figure_S10.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
+            doc.SaveAsPDF("Figure_S10.pdf");
+            finalFigureS10.SaveAsPNG("Figure_S10.png", 600.0 / 72);
+        }
+
+        /// <summary>
+        /// Use TreeViewer to create a tree plot from a tree file.
+        /// </summary>
+        /// <param name="treeFile">The full path to the tree file.</param>
+        /// <param name="svgFile">The full path to the output SVG plot file.</param>
+        private static void CreateTreeViewerPlot(string treeFile, string svgFile)
+        {
+            treeFile = Path.GetFullPath(treeFile);
+            svgFile = Path.GetFullPath(svgFile);
+
+            ProcessStartInfo info = new ProcessStartInfo("TreeViewerCommandLine");
+
+            info.RedirectStandardInput = true;
+            info.RedirectStandardOutput = true;
+            info.RedirectStandardError = true;
+
+            Process proc = new Process();
+            proc.StartInfo = info;
+
+            proc.Start();
+
+            proc.StandardInput.WriteLine("open " + treeFile);
+            proc.StandardInput.WriteLine("y");
+            proc.StandardInput.WriteLine("svg " + svgFile);
+            proc.StandardInput.WriteLine("exit");
+
+            proc.StandardError.ReadToEnd();
+
+            proc.WaitForExit();
         }
     }
 }

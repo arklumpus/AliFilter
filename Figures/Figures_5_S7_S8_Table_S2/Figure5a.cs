@@ -24,7 +24,7 @@ using VectSharp.Plots;
 using VectSharp;
 using MathNet.Numerics.Statistics;
 
-namespace Figures_5_S4_S5_Table_S2
+namespace Figures_5_S7_S8_Table_S2
 {
     internal static partial class Program
     {

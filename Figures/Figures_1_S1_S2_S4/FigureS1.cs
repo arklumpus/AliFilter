@@ -27,14 +27,14 @@ using VectSharp;
 using VectSharp.PDF;
 using VectSharp.Raster;
 
-namespace Figures_1_S1_S2_S3
+namespace Figures_1_S1_S2_S4
 {
     internal partial class Program
     {
-        public static void CreateFigureS2()
+        public static void CreateFigureS1()
         {
             // Read the alignment and the masks
-            Dictionary<string, string> alignment = FASTA.Read("../../../Data/78.aligned.fas");
+            Dictionary<string, string> alignment = FASTA.Read("../../../Data/27.aligned.fas");
 
             // Threshold from the validated model.
             double threshold = 0.36;
@@ -94,10 +94,10 @@ namespace Figures_1_S1_S2_S3
             Page rocCurvePage = DrawROCCurve(alifilterScores, manualMask, threshold, out (double threshold, double a, double mcc) model, out (double threshold, double a, double mcc) optimalA, out (double threshold, double a, double mcc) optimalMCC);
 
             // Draw the tree space plot.
-            Page treeSpacePage = TreeSpace.GetTreeSpacePlot("78", 300, 3);
+            Page treeSpacePage = TreeSpace.GetTreeSpacePlot("27", 300, 3);
 
             // Final page for the full figure.
-            Page fullPage = new Page(482, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30 + rocCurvePage.Height + 16);
+            Page fullPage = new Page(482, alignmentPage.Height + 17 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30 + rocCurvePage.Height + 20);
             fullPage.Background = Colours.White;
             Graphics gpr = fullPage.Graphics;
 
@@ -106,7 +106,6 @@ namespace Figures_1_S1_S2_S3
             gpr.Translate(0, 7);
 
             // Maximum width of the key labels.
-            //double labelWidth = Math.Max(masks.Keys.Select(x => maskFont.MeasureText(x).Width).Max(), outgroupFont.MeasureText("Outgroup").Width + 7);
             double labelWidth = outgroupFont.MeasureText("Outgroup").Width + 7;
 
             // Available width for the alignment and masks.
@@ -152,7 +151,7 @@ namespace Figures_1_S1_S2_S3
 
             {
                 gpr.Save();
-                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 15);
+                gpr.Translate(35, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17);
 
                 gpr.FillText(-5, maskHeight * 0.5, "Preservation score", maskFont, Colours.Black, TextBaselines.Middle);
 
@@ -180,17 +179,36 @@ namespace Figures_1_S1_S2_S3
 
                     gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12 - maskHeight * 0.25).Close(), colouring(threshold));
 
-                    gpr.FillText(left + 8, -12, "Model threshold", maskFont, Colours.Black, TextBaselines.Middle);
+                    gpr.FillText(left + 8, -9, "Model threshold", maskFont, Colours.Black, TextBaselines.Baseline);
                 }
 
                 {
+                    gpr.Save();
+                    gpr.Translate(0, 2);
                     double left = x0 + optimalMCC.threshold * width;
 
-                    gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), colouring(optimalMCC.threshold));
+                    gpr.FillPath(new GraphicsPath().Arc(left, -12, maskHeight * 0.25, 0, 2 * Math.PI).Close(), colouring(optimalMCC.threshold));
 
-                    FormattedText[] text = FormattedText.Format("Optimal threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
+                    FormattedText[] text = FormattedText.Format("Optimal <i>MCC</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
 
-                    gpr.FillText(left + 8, -12, text, Colours.Black, TextBaselines.Middle);
+                    gpr.FillText(left - 8 - text.Measure().Width, -9, text, Colours.Black, TextBaselines.Baseline);
+                    gpr.Restore();
+                }
+
+                {
+                    gpr.Save();
+                    gpr.Translate(0, -2);
+
+                    double left = x0 + optimalA.threshold * width;
+
+                    gpr.StrokePath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), Colours.White ,2);
+                    gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), colouring(optimalA.threshold));
+
+                    FormattedText[] text = FormattedText.Format("Optimal <i>A</i> threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
+
+                    gpr.FillText(left + 8, -9, text, Colours.Black, TextBaselines.Baseline);
+
+                    gpr.Restore();
                 }
 
                 gpr.Restore();
@@ -198,33 +216,37 @@ namespace Figures_1_S1_S2_S3
 
             {
                 gpr.Save();
-                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 15 + maskHeight + 20);
+
+                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20 + 5);
 
                 // Draw the part letter for part b
                 gpr.FillText(-5, 3, "b)", partLetterFont, Colours.Black, TextBaselines.Baseline);
 
                 gpr.DrawGraphics(0, 0, rocCurvePage.Graphics);
+
                 gpr.Restore();
             }
 
             {
                 gpr.Save();
-                gpr.Translate(fullPage.Width - treeSpacePage.Width, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20);
+
+                gpr.Translate(fullPage.Width - treeSpacePage.Width, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20 + 5);
 
                 // Draw the part letter for part c
                 gpr.FillText(0, 3, "c)", partLetterFont, Colours.Black, TextBaselines.Baseline);
 
                 gpr.DrawGraphics(0, 0, treeSpacePage.Graphics);
+
                 gpr.Restore();
             }
 
             Document doc = new Document();
             doc.Pages.Add(fullPage);
 
-            fullPage.SaveAsSVG("Figure_S2.svg");
-            fullPage.SaveAsSVG("Figure_S2.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
-            doc.SaveAsPDF("Figure_S2.pdf");
-            fullPage.SaveAsPNG("Figure_S2.png", 600 / 72.0);
+            fullPage.SaveAsSVG("Figure_S1.svg");
+            fullPage.SaveAsSVG("Figure_S1.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
+            doc.SaveAsPDF("Figure_S1.pdf");
+            fullPage.SaveAsPNG("Figure_S1.png", 600 / 72.0);
         }
     }
 }

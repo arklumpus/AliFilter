@@ -22,7 +22,7 @@
 
 using System.Text;
 
-namespace Figures_1_S1_S2_S3
+namespace Figures_1_S1_S2_S4
 {
     /// <summary>
     /// Contains methods to read and write FASTA alignments.

@@ -24,13 +24,17 @@ using PhyloTree.Formats;
 using PhyloTree;
 using VectSharp.Plots;
 using VectSharp;
-using VectSharp.Filters;
 
-namespace Figure_S6
+namespace Figure_S9
 {
     internal partial class Program
     {
-        static Page CreateFigureS6b(bool useCache = true)
+        /// <summary>
+        /// Create Figure S9c.
+        /// </summary>
+        /// <param name="useCache">If this is true, the results of each step are cached and reused, in order to make it easier to make small changes to the code without having to recompute everything.</param>
+        /// <returns>The <see cref="Page"/> on which Figure S9c has been rendered.</returns>
+        static Page CreateFigureS9c(bool useCache = true)
         {
             // Number of replicate ML analyses for each tool.
             int replicates = 3;
@@ -47,7 +51,7 @@ namespace Figure_S6
                 { "trimal",    Colour.FromRgb(238, 221, 136) },
                 { "gblocks",    Colour.FromRgb(255, 170, 187) },
                 { "noisy",   Colour.FromRgb(153, 221, 255) },
-                { "clipkit",   Colour.FromRgb(187, 204, 51) },
+                { "clipkit",   Colour.FromRgb(187, 204, 51) }
             };
 
             // Symbols for each tool.
@@ -77,19 +81,19 @@ namespace Figure_S6
                 { "trimal", (triangle, false, 4) },
                 { "gblocks", (circle, false, 4.5) },
                 { "noisy", (diamond, false, 5) },
-                { "clipkit", (square, false, 3.5) },
+                { "clipkit", (square, false, 3.5) }
             };
 
             // Manually fixed positions for the tool names.
-            Dictionary<string, double[][]> toolNamePositions = new Dictionary<string, double[][]>()
+            Dictionary<string, (double[], double[])> toolNamePositions = new Dictionary<string, (double[], double[])>()
             {
-                { "raw", new double[][]{ new double[] { -2, 7 }, new double[] { 1.8, 1.3 } } },
-                { "alifilter", new double[][]{ new double[] { 2.7, 6 }, new double[] { 2.2, 1.8 } } },
-                { "bmge", new double[][]{ new double[] { -3, 4 }, new double[]{ 1.5, 0.9 } } },
-                { "trimal", new double[][]{ new double[] { 3.2, -5.2 }, new double[]{ 2.3, -1 } } },
-                { "gblocks", new double[][]{ new double[] { -10, -3 }, new double[]{ -14.8, 0.6 }, new double[] { -7.3, -4.5 } } },
-                { "noisy", new double[][] { new double[] { -4, 1 }, new double[] { -0.9, -0.2 } } },
-                { "clipkit", new double[][]{ new double[] { -1, -7.7 }, new double[] { 1.8, -0.8 } } }
+                { "raw", (new double[] { -0.05, 0.11 }, new double[] { -0.055, 0.01 }) },
+                { "alifilter", (new double[] { 0.03, 0.04 }, new double[] { -0.027, -0.03 }) },
+                { "bmge", (new double[] { 0.06, 0 }, new double[]{ -0.014, -0.041 }) },
+                { "trimal", (new double[] { 0.12, -0.075 }, new double[] { 0.035, -0.075 }) },
+                { "gblocks", (new double[] { 0.22, 0.13 }, new double[] { 0.23, 0.09 }) },
+                { "noisy", (new double[] { -0.01, 0.17 }, new double[] { -0.07, 0.17 }) },
+                { "clipkit", (new double[] { 0, 0.08 }, new double[] { -0.04, 0.005 }) }
             };
 
             Dictionary<string, string> toolNames = new Dictionary<string, string>()
@@ -105,15 +109,11 @@ namespace Figure_S6
 
             string[] tools = new string[] { "raw", "alifilter", "bmge", "trimal", "gblocks", "noisy", "clipkit" };
 
-            Dictionary<string, int> toolIndices = tools.Select((x, i) => new KeyValuePair<string, int>(x, i)).ToDictionary();
-
-            // Compute the 2D tree coordinates induced by the Robinson-Foulds distance.
-            (double[][] treeCoordinates, float[][] mlTreeDistances) = GetTreeCoordinatesRobinsonFoulds(useCache, tools, sampleSize, replicates);
+            // Compute the 2D tree coordinates induced by the Frobenius distance metric.
+            double[][] treeCoordinates = GetTreeCoordinatesFrobenius(useCache, tools, sampleSize, replicates);
 
             // Create the scatter plot.
-            Plot plot = Plot.Create.ScatterPlot(treeCoordinates, width: 450, height: 250, xAxisTitle: "Coordinate 1", yAxisTitle: "Coordinate 2");
-
-            plot.GetAll<ContinuousAxisTitle>().ElementAt(1).Position += 10;
+            Plot plot = Plot.Create.ScatterPlot(treeCoordinates, width: 760, xAxisTitle: "Coordinate 1", yAxisTitle: "Coordinate 2");
 
             // Fine-tune the plot appearance.
             plot.RemovePlotElement(plot.GetFirst<ScatterPoints<IReadOnlyList<double>>>());
@@ -150,29 +150,6 @@ namespace Figure_S6
                     }
                 }
 
-                Graphics blurGpr = new Graphics();
-
-                for (int i = 0; i < tools.Length; i++)
-                {
-                    for (int j = 0; j < replicates; j++)
-                    {
-                        Point pt = coord.ToPlotCoordinates(treeCoordinates[i * replicates + j]);
-                        GraphicsPath shape = star;
-                        double shapeSize = 6;
-
-                        blurGpr.Save();
-                        blurGpr.Translate(pt);
-                        blurGpr.Scale(shapeSize, shapeSize);
-
-                        blurGpr.FillPath(shape, Colours.White);
-                        blurGpr.StrokePath(shape, Colours.White, 3.0 / shapeSize);
-
-                        blurGpr.Restore();
-                    }
-                }
-
-                gpr.DrawGraphics(0, 0, blurGpr, new GaussianBlurFilter(0.5));
-
                 Font fnt = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.Helvetica), 12);
 
                 for (int i = 0; i < tools.Length; i++)
@@ -188,45 +165,26 @@ namespace Figure_S6
                         gpr.Save();
                         gpr.Translate(pt);
                         gpr.Scale(shapeSize, shapeSize);
-
-                        if (tools[i] == "clipkit" || tools[i] == "alifilter" || tools[i] == "raw" || tools[i] == "bmge" || tools[i] == "trimal")
-                        {
-                            int index = tools[i] switch
-                            {
-                                "clipkit" => 1,
-                                "alifilter" => 4,
-                                "raw" => 3,
-                                "bmge" => 2,
-                                "trimal" => 0,
-                                _ => 0
-                            };
-                            GraphicsPath clippingPath = new GraphicsPath().MoveTo(0, 0).Arc(0, 0, 1.6, 2 * Math.PI / 5 * index, 2 * Math.PI / 5 * (index + 1)).Close();
-                            gpr.SetClippingPath(clippingPath);
-                        }
-
+                        gpr.StrokePath(shape, Colours.White, 3.0 / shapeSize);
                         gpr.FillPath(shape, col);
-
                         gpr.Restore();
+
                     }
 
-                    if (toolNamePositions.TryGetValue(tools[i], out double[][] toolPos))
+                    if (toolNamePositions.TryGetValue(tools[i], out (double[], double[]) toolPos))
                     {
+                        Point pt = coord.ToPlotCoordinates(toolPos.Item1);
+                        Point pt2 = coord.ToPlotCoordinates(toolPos.Item2);
                         string toolName = toolNames[tools[i]];
-                        double arrowSize = 3;
 
-                        Point pt = coord.ToPlotCoordinates(toolPos[0]);
+                        double arrowSize = 4;
 
-                        for (int j = 1; j < toolPos.Length; j++)
-                        {
-                            Point pt2 = coord.ToPlotCoordinates(toolPos[j]);
-
-                            gpr.StrokePath(new GraphicsPath().MoveTo(pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4 + (fnt.MeasureText(toolName).Width + 13 + 10) * 0.5, pt.Y).LineTo(pt2), Colours.Black);
-                            gpr.Save();
-                            gpr.Translate(pt2);
-                            gpr.Rotate(Math.Atan2(pt2.Y - pt.Y, pt2.X - (pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4 + (fnt.MeasureText(toolName).Width + 13 + 10) * 0.5)));
-                            gpr.FillPath(new GraphicsPath().MoveTo(-arrowSize, -arrowSize).LineTo(-arrowSize, arrowSize).LineTo(arrowSize, 0).Close(), Colours.Black);
-                            gpr.Restore();
-                        }
+                        gpr.StrokePath(new GraphicsPath().MoveTo(pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4 + (fnt.MeasureText(toolName).Width + 13 + 10) * 0.5, pt.Y).LineTo(pt2), Colours.Black);
+                        gpr.Save();
+                        gpr.Translate(pt2);
+                        gpr.Rotate(Math.Atan2(pt2.Y - pt.Y, pt2.X - (pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4 + (fnt.MeasureText(toolName).Width + 13 + 10) * 0.5)));
+                        gpr.FillPath(new GraphicsPath().MoveTo(-arrowSize, -arrowSize).LineTo(-arrowSize, arrowSize).LineTo(arrowSize, 0).Close(), Colours.Black);
+                        gpr.Restore();
 
                         gpr.FillRectangle(pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4, pt.Y - 9, fnt.MeasureText(toolName).Width + 13 + 10, 18, Colours.White);
                         gpr.StrokeRectangle(pt.X - (fnt.MeasureText(toolName).Width + 13) * 0.5 - 13 - 4, pt.Y - 9, fnt.MeasureText(toolName).Width + 13 + 10, 18, Colours.Black);
@@ -257,33 +215,30 @@ namespace Figure_S6
                 }
             }));
 
-            // Render the plot.
-            Page figureS6b = plot.Render();
-
-            return figureS6b;
+            return plot.Render();
         }
 
         /// <summary>
-        /// Compute the 2D tree coordinates induced by the Robinson-Foulds distance.
+        /// Compute the 2D tree coordinates induced by the Frobenius distance metric.
         /// </summary>
         /// <param name="useCache">If this is true, the results of each step are cached and reused, in order to make it easier to make small changes to the code without having to recompute everything.</param>
         /// <param name="tools">The names of the tools.</param>
         /// <param name="sampleSize">The number of UFBoot replicates to preserve for each tool.</param>
         /// <param name="replicates">The number of replicate ML analyses for each tool.</param>
         /// <returns>The 2D tree coordinates for each tree.</returns>
-        static (double[][], float[][]) GetTreeCoordinatesRobinsonFoulds(bool useCache, string[] tools, int sampleSize, int replicates)
+        static double[][] GetTreeCoordinatesFrobenius(bool useCache, string[] tools, int sampleSize, int replicates)
         {
             double[][] treeCoordinates;
 
-            if (!useCache || !File.Exists("Cache/FigureS6b_coordinates.txt"))
+            if (!useCache || !File.Exists("Cache/FigureS9c_coordinates.txt"))
             {
                 float[][] distanceMatrixOfTrees;
 
-                if (!useCache || !File.Exists("Cache/FigureS6b_distMat.bin"))
+                if (!useCache || !File.Exists("Cache/FigureS9c_distMat.bin"))
                 {
                     TreeNode[][] subsampledTrees;
 
-                    if (!useCache || !File.Exists("Cache/FigureS6b_raw.tbi"))
+                    if (!useCache || !File.Exists("Cache/FigureS9c_raw.tbi"))
                     {
                         // Step 1: subsample the UFBoot replicates, only preserving the requested number of trees.
 
@@ -291,7 +246,7 @@ namespace Figure_S6
                         TreeNode[][] allTrees = ReadUFBootTrees(tools);
 
                         // Subsample the replicates.
-                        subsampledTrees = SubsampleTrees(allTrees, sampleSize, CreateRobinsonFouldsDistanceMatrixOfTrees);
+                        subsampledTrees = SubsampleTrees(allTrees, sampleSize, CreateFrobeniusDistanceMatrixOfTrees);
 
                         if (useCache)
                         {
@@ -299,7 +254,7 @@ namespace Figure_S6
                             Directory.CreateDirectory("Cache");
                             for (int i = 0; i < tools.Length; i++)
                             {
-                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/FigureS6b_" + tools[i] + ".tbi");
+                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/FigureS9c_" + tools[i] + ".tbi");
                             }
                         }
                     }
@@ -310,7 +265,7 @@ namespace Figure_S6
 
                         for (int i = 0; i < tools.Length; i++)
                         {
-                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/FigureS6b_" + tools[i] + ".tbi").ToArray();
+                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/FigureS9c_" + tools[i] + ".tbi").ToArray();
                         }
                     }
 
@@ -323,18 +278,18 @@ namespace Figure_S6
                     TreeNode[] joinedTrees = mlTrees.Aggregate(Enumerable.Empty<TreeNode>(), (a, b) => a.Concat(b)).Concat(subsampledTrees.Aggregate(Enumerable.Empty<TreeNode>(), (a, b) => a.Concat(b))).ToArray();
 
                     // Create the distance matrix of trees.
-                    distanceMatrixOfTrees = CreateDistanceMatrixOfTrees(joinedTrees, CreateRobinsonFouldsDistanceMatrixOfTrees);
+                    distanceMatrixOfTrees = CreateDistanceMatrixOfTrees(joinedTrees, CreateFrobeniusDistanceMatrixOfTrees);
 
                     if (useCache)
                     {
                         // Save the computed distance matrix in the cache.
-                        SaveDistanceMatrix("Cache/FigureS6b_distMat.bin", distanceMatrixOfTrees);
+                        SaveDistanceMatrix("Cache/FigureS9c_distMat.bin", distanceMatrixOfTrees);
                     }
                 }
                 else
                 {
                     // Reuse the cached distance matrix of trees.
-                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/FigureS6b_distMat.bin");
+                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/FigureS9c_distMat.bin");
                 }
 
                 // Step 3: use the distance matrix of trees to perform a classical MDS extracting the first two coordinates.
@@ -343,43 +298,101 @@ namespace Figure_S6
                 if (useCache)
                 {
                     // Save the tree coordinates.
-                    SaveTreeCoordinates("Cache/FigureS6b_coordinates.txt", treeCoordinates);
+                    SaveTreeCoordinates("Cache/FigureS9c_coordinates.txt", treeCoordinates);
                 }
             }
             else
             {
                 // Reuse the cached coordinates.
-                treeCoordinates = ReadTreeCoordinates("Cache/FigureS6b_coordinates.txt");
+                treeCoordinates = ReadTreeCoordinates("Cache/FigureS9c_coordinates.txt");
             }
 
-            // Compute distances between the ML trees (used to add the distances on the scatter plot).
-            TreeNode[] allMlTrees = ReadMLTrees(tools).Aggregate(Enumerable.Empty<TreeNode>(), (a, b) => a.Concat(b)).ToArray();
-
-            return (treeCoordinates, CreateRobinsonFouldsDistanceMatrixOfTrees(allMlTrees, _ => { }));
+            return treeCoordinates;
         }
 
         /// <summary>
-        /// Creates a distance matrix from a set of trees, according to the Robinson-Foulds metric.
+        /// Creates a distance matrix from a set of trees, according to the Frobenius distance metric.
         /// </summary>
         /// <param name="allTrees">The trees that will be used to compute the distance matrix.</param>
         /// <param name="progressAction">A progress callback.</param>
         /// <returns>A distance matrix of trees.</returns>
-        static float[][] CreateRobinsonFouldsDistanceMatrixOfTrees(TreeNode[] allTrees, Action<double> progressAction)
+        static float[][] CreateFrobeniusDistanceMatrixOfTrees(TreeNode[] allTrees, Action<double> progressAction)
         {
-            double[,] rfDistances = TreeNode.RobinsonFouldsDistances(allTrees, false, progress: new Progress<double>(progressAction));
+            List<string> leafNames = allTrees[0].GetLeafNames();
 
-            float[][] distanceMatrixOfTrees = new float[allTrees.Length][];
+            float[][] distanceMatrixOfTrees;
 
-            for (int i = 0; i < allTrees.Length; i++)
+            float[][][] treesAsDistanceMatrices = new float[allTrees.Length][][];
+            Dictionary<string, int>[] leafIndices = new Dictionary<string, int>[treesAsDistanceMatrices.Length];
+
+            // Convert each tree into a patristic distance matrix (note: the trees will have already been normalised).
+            Parallel.For(0, allTrees.Length, k =>
             {
-                distanceMatrixOfTrees[i] = new float[i];
+                treesAsDistanceMatrices[k] = allTrees[k].CreateDistanceMatrixFloat(maxDegreeOfParallelism: 1);
+                leafIndices[k] = new Dictionary<string, int>(allTrees[k].GetLeafNames().Select((x, i) => new KeyValuePair<string, int>(x, i)));
+            });
+
+            distanceMatrixOfTrees = new float[treesAsDistanceMatrices.Length][];
+
+            for (int j = 0; j < treesAsDistanceMatrices.Length; j++)
+            {
+                distanceMatrixOfTrees[j] = new float[j];
+            }
+
+            int totalMatrices = treesAsDistanceMatrices.Length * (treesAsDistanceMatrices.Length - 1) / 2;
+
+            object progressLock = new object();
+            int countDone = 0;
+
+            // Compute the Frobenius distance between each pair of patristic distance matrices.
+            Parallel.For(0, totalMatrices, j =>
+            {
+                (int i2, int j2) = GetIndices(j, treesAsDistanceMatrices.Length);
+
+                distanceMatrixOfTrees[i2][j2] = (float)ComputeFrobeniusTreeDistance(leafNames, treesAsDistanceMatrices[i2], leafIndices[i2], treesAsDistanceMatrices[j2], leafIndices[j2]);
+
+                lock (progressLock)
+                {
+                    countDone++;
+                    double progress = (double)countDone / totalMatrices;
+                    progressAction(progress);
+                }
+            });
+
+            return distanceMatrixOfTrees;
+        }
+
+        /// <summary>
+        /// Compute the Frobenius distance between two patristic distance matrices.
+        /// </summary>
+        /// <param name="leafNames">The names of all the leaves in the trees.</param>
+        /// <param name="tree1AsDistMat">The first patristric distance matrix.</param>
+        /// <param name="tree1LeafIndices">The indices of each leaf in the patristic distance matrix.</param>
+        /// <param name="tree2AsDistMat">The second patristic distance matrix.</param>
+        /// <param name="tree2LeafIndices">The indices of each leaf in the patristic distance matrix.</param>
+        /// <returns></returns>
+        private static double ComputeFrobeniusTreeDistance(List<string> leafNames, float[][] tree1AsDistMat, Dictionary<string, int> tree1LeafIndices, float[][] tree2AsDistMat, Dictionary<string, int> tree2LeafIndices)
+        {
+            double distance = 0;
+
+            for (int i = 0; i < leafNames.Count; i++)
+            {
+                int tree1I = tree1LeafIndices[leafNames[i]];
+                int tree2I = tree2LeafIndices[leafNames[i]];
+
                 for (int j = 0; j < i; j++)
                 {
-                    distanceMatrixOfTrees[i][j] = (float)rfDistances[i, j];
+                    int tree1J = tree1LeafIndices[leafNames[j]];
+                    int tree2J = tree2LeafIndices[leafNames[j]];
+
+                    double val = tree1AsDistMat[Math.Max(tree1I, tree1J)][Math.Min(tree1I, tree1J)] - tree2AsDistMat[Math.Max(tree2I, tree2J)][Math.Min(tree2I, tree2J)];
+
+                    // Multiply by 2 because the matrices are symmetric.
+                    distance += val * val * 2;
                 }
             }
 
-            return distanceMatrixOfTrees;
+            return Math.Sqrt(distance);
         }
     }
 }

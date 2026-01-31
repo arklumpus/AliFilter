@@ -20,7 +20,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-using MathNet.Numerics.Statistics;
 using PhyloTree.TreeBuilding;
 using PhyloTree;
 using VectSharp.SVG;
@@ -28,35 +27,36 @@ using VectSharp;
 using VectSharp.PDF;
 using VectSharp.Raster;
 
-namespace Figures_1_S1_S2_S3
+namespace Figures_1_S1_S2_S4
 {
     internal partial class Program
     {
-        public static void CreateFigureS3()
+        public static void CreateFigureS2()
         {
             // Read the alignment and the masks
-            Dictionary<string, string> alignment = FASTA.Read("../../../Data/95.aligned.fas");
-            Dictionary<string, string> allMasks = FASTA.Read("../../../Data/masks_mistakes.txt");
+            Dictionary<string, string> alignment = FASTA.Read("../../../Data/78.aligned.fas");
 
-            // Thresholds from the validated models.
-            double[] thresholds = new double[] { 0.36, 0.36, 0.36, 0.36, 0.36, 0.55, 0.55, 0.46, 0.46, 0.55, 0.54, 0.48, 0.38, 0.54, 0.54, 0.53, 0.53, 0.54, 0.54, 0.48, 0.49, 0.43, 0.53, 0.53, 0.42, 0.44, 0.52, 0.49, 0.49, 0.44, 0.45, 0.52, 0.5, 0.52, 0.45, 0.47, 0.47, 0.47, 0.5, 0.47, 0.51, 0.48, 0.48, 0.52, 0.51, 0.49, 0.49, 0.49, 0.5, 0.5, 0.5, 0.5, 0.5, 0.51, 0.5 };
+            // Threshold from the validated model.
+            double threshold = 0.36;
 
-            string manualMask = allMasks["Manual"];
-            allMasks.Remove("Manual");
+            // The masks have been added directly as "sequences" at the end of the alignment.
+            string manualMask = alignment["Manual"];
+            alignment.Remove("Manual");
 
-            string alifilterMask = allMasks["AliFilter"];
-            allMasks.Remove("AliFilter");
+            string alifilterMask = alignment["AliFilter"];
+            alignment.Remove("AliFilter");
 
-            Dictionary<string, double[]> masks = new Dictionary<string, double[]>(allMasks.Select(x => new KeyValuePair<string, double[]>(x.Key, x.Value.Split(" ").Select(y => double.Parse(y, System.Globalization.CultureInfo.InvariantCulture)).ToArray())));
+            double[] alifilterScores = alignment["AliFilter_Float"].Split(" ").Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            alignment.Remove("AliFilter_Float");
 
             // For enhanced visual clarity, build a neighbour-joining tree from the alignment and sort the sequences accordingly.
             TreeNode njTree = NeighborJoining.BuildTree(alignment, evolutionModel: EvolutionModel.BLOSUM62);
 
             // Re-root the tree.
-            njTree = njTree.GetRootedTree(njTree.GetLastCommonAncestor("Candidatus.Obscuribacter.phosphatis", "Heliobacterium_modesticaldum"));
+            njTree = njTree.GetRootedTree(njTree.GetLastCommonAncestor("Candidatus.Obscuribacter.phosphatis", "Candidatus.Caenarcanum.bioreactoricola"));
 
             // Outgroup taxa.
-            List<string> outgroup = njTree.GetLastCommonAncestor("Candidatus.Obscuribacter.phosphatis", "Heliobacterium_modesticaldum").GetLeafNames();
+            List<string> outgroup = njTree.GetLastCommonAncestor("Candidatus.Obscuribacter.phosphatis", "Candidatus.Caenarcanum.bioreactoricola").GetLeafNames();
 
             // Get the sorted sequence names.
             List<string> sortedSequences = njTree.GetLeafNames();
@@ -75,6 +75,9 @@ namespace Figures_1_S1_S2_S3
             // Font for the outgroup.
             Font outgroupFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaOblique), 8);
 
+            // Font for the part letters.
+            Font partLetterFont = new Font(FontFamily.ResolveFontFamily(FontFamily.StandardFontFamilies.HelveticaBold), 10);
+
             // Draw the alignment.
             Page alignmentPage = DrawAlignment(sortedSequences, alignment, residueWidth, sequenceHeight);
 
@@ -85,12 +88,22 @@ namespace Figures_1_S1_S2_S3
             // Draw the masks.
             Page manualMaskPage = DrawMask(manualMask, residueWidth, maskHeight, manualMaskColour);
             Page aliFilterMaskPage = DrawMask(alifilterMask, residueWidth, maskHeight, Colour.FromRgb(119, 170, 221));
-            Page maskPage = DrawFuzzyMasks(masks.Keys.OrderBy(x => double.Parse(x.Split("_")[1].Split(".")[0..^1].Aggregate((a, b) => a + "." + b), System.Globalization.CultureInfo.InvariantCulture)).ThenBy(x => int.Parse(x.Split(".")[^1])).ToList(), masks, residueWidth, maskHeight * 0.2, colouring);
+            Page maskPage = DrawFuzzyMasks(new List<string>() { "AliFilter_Float" }, new Dictionary<string, double[]>() { { "AliFilter_Float", alifilterScores } }, residueWidth, maskHeight, colouring);
+
+            // Draw the ROC curve.
+            Page rocCurvePage = DrawROCCurve(alifilterScores, manualMask, threshold, out (double threshold, double a, double mcc) model, out (double threshold, double a, double mcc) optimalA, out (double threshold, double a, double mcc) optimalMCC);
+
+            // Draw the tree space plot.
+            Page treeSpacePage = TreeSpace.GetTreeSpacePlot("78", 300, 3);
 
             // Final page for the full figure.
-            Page fullPage = new Page(482, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30);
+            Page fullPage = new Page(482, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + maskHeight + 5 + 30 + rocCurvePage.Height + 16);
             fullPage.Background = Colours.White;
             Graphics gpr = fullPage.Graphics;
+
+            // Draw the part letter for part a
+            gpr.FillText(0, 0, "a)", partLetterFont, Colours.Black);
+            gpr.Translate(0, 7);
 
             // Maximum width of the key labels.
             //double labelWidth = Math.Max(masks.Keys.Select(x => maskFont.MeasureText(x).Width).Max(), outgroupFont.MeasureText("Outgroup").Width + 7);
@@ -128,30 +141,15 @@ namespace Figures_1_S1_S2_S3
             gpr.DrawGraphics(0, 0, maskPage.Graphics);
             gpr.Restore();
 
-            // Labels for the masks.
+
             {
                 gpr.FillText(labelWidth - maskFont.MeasureText("Manual").Width, alignmentPage.Height + 5 + maskHeight * 0.5, "Manual", maskFont, Colours.Black, TextBaselines.Middle);
 
                 gpr.FillText(labelWidth - maskFont.MeasureText("AliFilter").Width, alignmentPage.Height + 5 + manualMaskPage.Height + 5 + maskHeight * 0.5, "AliFilter", maskFont, Colours.Black, TextBaselines.Middle);
 
-                for (int i = 0; i < 11; i++)
-                {
-                    string text = (i * 0.05).ToString("0%");
-
-                    gpr.FillText(labelWidth - maskFont.MeasureText(text).Width, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskHeight * (i + 0.5), text, maskFont, Colours.Black, TextBaselines.Middle);
-                }
-
-                gpr.Save();
-
-                gpr.Translate(labelWidth - maskFont.MeasureText("50%").Width - 10, alignmentPage.Height + 15 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height * 0.5);
-                gpr.Rotate(-Math.PI / 2);
-
-                gpr.FillText(-maskFont.MeasureText("% Mistakes").Width * 0.5, 0, "% Mistakes", maskFont, Colours.Black, TextBaselines.Bottom);
-
-                gpr.Restore();
+                gpr.FillText(labelWidth - maskFont.MeasureText("Scores").Width, alignmentPage.Height + 5 + manualMaskPage.Height + 5 + maskPage.Height + 5 + maskHeight * 0.5, "Scores", maskFont, Colours.Black, TextBaselines.Middle);
             }
 
-            // Preservation score colour scale.
             {
                 gpr.Save();
                 gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 15);
@@ -178,34 +176,55 @@ namespace Figures_1_S1_S2_S3
                 gpr.StrokeRectangle(x0, 0, width, maskHeight, scoreBrush, 1.5);
 
                 {
-                    double q1 = thresholds.LowerQuartile();
-                    double medianThreshold = thresholds.Median();
-                    double q3 = thresholds.UpperQuartile();
+                    double left = x0 + threshold * width;
 
-                    double left = x0 + thresholds.Min() * width;
-                    double x1 = x0 + q1 * width;
-                    double x2 = x0 + medianThreshold * width;
-                    double x3 = x0 + q3 * width;
-                    double right = x0 + thresholds.Max() * width;
+                    gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12 - maskHeight * 0.25).Close(), colouring(threshold));
 
-
-                    gpr.StrokePath(new GraphicsPath().MoveTo(left, -12 - maskHeight * 0.25).LineTo(left, -12 + maskHeight * 0.25).MoveTo(left, -12).LineTo(right, -12).MoveTo(right, -12 - maskHeight * 0.25).LineTo(right, -12 + maskHeight * 0.25), scoreBrush);
-                    gpr.FillRectangle(x1, -12 - maskHeight * 0.25, x3 - x1, maskHeight * 0.5, scoreBrush);
-                    gpr.StrokePath(new GraphicsPath().MoveTo(x2, -12 - maskHeight * 0.25).LineTo(x2, -12 + maskHeight * 0.25), Colours.White);
-
-                    gpr.FillText(left - maskFont.MeasureText("Model thresholds").Width - 5, -12, "Model thresholds", maskFont, Colours.Black, TextBaselines.Middle);
+                    gpr.FillText(left + 8, -12, "Model threshold", maskFont, Colours.Black, TextBaselines.Middle);
                 }
 
+                {
+                    double left = x0 + optimalMCC.threshold * width;
+
+                    gpr.FillPath(new GraphicsPath().MoveTo(left, -12 + maskHeight * 0.25).LineTo(left - maskHeight * 0.25, -12).LineTo(left, -12 - maskHeight * 0.25).LineTo(left + maskHeight * 0.25, -12).Close(), colouring(optimalMCC.threshold));
+
+                    FormattedText[] text = FormattedText.Format("Optimal threshold", FontFamily.StandardFontFamilies.Helvetica, 10).ToArray();
+
+                    gpr.FillText(left + 8, -12, text, Colours.Black, TextBaselines.Middle);
+                }
+
+                gpr.Restore();
+            }
+
+            {
+                gpr.Save();
+                gpr.Translate(5, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 15 + maskHeight + 20);
+
+                // Draw the part letter for part b
+                gpr.FillText(-5, 3, "b)", partLetterFont, Colours.Black, TextBaselines.Baseline);
+
+                gpr.DrawGraphics(0, 0, rocCurvePage.Graphics);
+                gpr.Restore();
+            }
+
+            {
+                gpr.Save();
+                gpr.Translate(fullPage.Width - treeSpacePage.Width, alignmentPage.Height + 20 + manualMaskPage.Height + aliFilterMaskPage.Height + maskPage.Height + 17 + maskHeight + 20);
+
+                // Draw the part letter for part c
+                gpr.FillText(0, 3, "c)", partLetterFont, Colours.Black, TextBaselines.Baseline);
+
+                gpr.DrawGraphics(0, 0, treeSpacePage.Graphics);
                 gpr.Restore();
             }
 
             Document doc = new Document();
             doc.Pages.Add(fullPage);
 
-            fullPage.SaveAsSVG("Figure_S3.svg");
-            fullPage.SaveAsSVG("Figure_S3.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
-            doc.SaveAsPDF("Figure_S3.pdf");
-            fullPage.SaveAsPNG("Figure_S3.png", 600 / 72.0);
+            fullPage.SaveAsSVG("Figure_S2.svg");
+            fullPage.SaveAsSVG("Figure_S2.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
+            doc.SaveAsPDF("Figure_S2.pdf");
+            fullPage.SaveAsPNG("Figure_S2.png", 600 / 72.0);
         }
     }
 }

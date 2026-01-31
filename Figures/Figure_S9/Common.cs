@@ -26,7 +26,7 @@ using PhyloTree.Formats;
 using PhyloTree.TreeBuilding;
 using PhyloTree;
 
-namespace Figure_S6
+namespace Figure_S9
 {
     internal partial class Program
     {

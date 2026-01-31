@@ -28,7 +28,7 @@ using PhyloTree;
 using VectSharp;
 using VectSharp.Plots;
 
-namespace Figures_1_S1_S2_S3
+namespace Figures_1_S1_S2_S4
 {
     internal static class TreeSpace
     {

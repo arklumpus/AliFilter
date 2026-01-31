@@ -29,11 +29,11 @@ using VectSharp.SVG;
 using VectSharp.PDF;
 using VectSharp.Raster;
 
-namespace Figures_5_S4_S5_Table_S2
+namespace Figures_5_S7_S8_Table_S2
 {
     internal static partial class Program
     {
-        static void CreateFigureS4(bool useCache = true)
+        static void CreateFigureS7(bool useCache = true)
         {
 
             // Number of replicate ML analyses for each tool.
@@ -313,21 +313,21 @@ namespace Figures_5_S4_S5_Table_S2
             }));
 
             // Render the plot.
-            Page figureS4 = plot.Render();
+            Page figureS7 = plot.Render();
 
             // Resize to a width of 17cm.
-            Page finalFigureS4 = new Page(482, figureS4.Height * 482 / figureS4.Width);
-            finalFigureS4.Background = Colours.White;
-            finalFigureS4.Graphics.Scale(482 / figureS4.Width, 482 / figureS4.Width);
-            finalFigureS4.Graphics.DrawGraphics(0, 0, figureS4.Graphics);
+            Page finalFigureS7 = new Page(482, figureS7.Height * 482 / figureS7.Width);
+            finalFigureS7.Background = Colours.White;
+            finalFigureS7.Graphics.Scale(482 / figureS7.Width, 482 / figureS7.Width);
+            finalFigureS7.Graphics.DrawGraphics(0, 0, figureS7.Graphics);
             
             Document doc = new Document();
-            doc.Pages.Add(finalFigureS4);
+            doc.Pages.Add(finalFigureS7);
 
-            finalFigureS4.SaveAsSVG("Figure_S4.svg");
-            finalFigureS4.SaveAsSVG("Figure_S4.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
-            doc.SaveAsPDF("Figure_S4.pdf");
-            finalFigureS4.SaveAsPNG("Figure_S4.png", 600.0 / 72);
+            finalFigureS7.SaveAsSVG("Figure_S7.svg");
+            finalFigureS7.SaveAsSVG("Figure_S7.notext.svg", SVGContextInterpreter.TextOptions.ConvertIntoPathsUsingGlyphs);
+            doc.SaveAsPDF("Figure_S7.pdf");
+            finalFigureS7.SaveAsPNG("Figure_S7.png", 600.0 / 72);
         }
 
         /// <summary>
@@ -342,15 +342,15 @@ namespace Figures_5_S4_S5_Table_S2
         {
             double[][] treeCoordinates;
 
-            if (!useCache || !File.Exists("Cache/FigureS4_coordinates.txt"))
+            if (!useCache || !File.Exists("Cache/FigureS7_coordinates.txt"))
             {
                 float[][] distanceMatrixOfTrees;
 
-                if (!useCache || !File.Exists("Cache/FigureS4_distMat.bin"))
+                if (!useCache || !File.Exists("Cache/FigureS7_distMat.bin"))
                 {
                     TreeNode[][] subsampledTrees;
 
-                    if (!useCache || !File.Exists("Cache/FigureS4_raw.tbi"))
+                    if (!useCache || !File.Exists("Cache/FigureS7_raw.tbi"))
                     {
                         // Step 1: subsample the UFBoot replicates, only preserving the requested number of trees.
 
@@ -366,7 +366,7 @@ namespace Figures_5_S4_S5_Table_S2
                             Directory.CreateDirectory("Cache");
                             for (int i = 0; i < tools.Length; i++)
                             {
-                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/FigureS4_" + tools[i] + ".tbi");
+                                BinaryTree.WriteAllTrees(subsampledTrees[i], "Cache/FigureS7_" + tools[i] + ".tbi");
                             }
                         }
                     }
@@ -377,7 +377,7 @@ namespace Figures_5_S4_S5_Table_S2
 
                         for (int i = 0; i < tools.Length; i++)
                         {
-                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/FigureS4_" + tools[i] + ".tbi").ToArray();
+                            subsampledTrees[i] = BinaryTree.ParseAllTrees("Cache/FigureS7_" + tools[i] + ".tbi").ToArray();
                         }
                     }
 
@@ -395,13 +395,13 @@ namespace Figures_5_S4_S5_Table_S2
                     if (useCache)
                     {
                         // Save the computed distance matrix in the cache.
-                        SaveDistanceMatrix("Cache/FigureS4_distMat.bin", distanceMatrixOfTrees);
+                        SaveDistanceMatrix("Cache/FigureS7_distMat.bin", distanceMatrixOfTrees);
                     }
                 }
                 else
                 {
                     // Reuse the cached distance matrix of trees.
-                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/FigureS4_distMat.bin");
+                    distanceMatrixOfTrees = ReadDistanceMatrix("Cache/FigureS7_distMat.bin");
                 }
 
                 // Step 3: use the distance matrix of trees to perform a classical MDS extracting the first two coordinates.
@@ -410,13 +410,13 @@ namespace Figures_5_S4_S5_Table_S2
                 if (useCache)
                 {
                     // Save the tree coordinates.
-                    SaveTreeCoordinates("Cache/FigureS4_coordinates.txt", treeCoordinates);
+                    SaveTreeCoordinates("Cache/FigureS7_coordinates.txt", treeCoordinates);
                 }
             }
             else
             {
                 // Reuse the cached coordinates.
-                treeCoordinates = ReadTreeCoordinates("Cache/FigureS4_coordinates.txt");
+                treeCoordinates = ReadTreeCoordinates("Cache/FigureS7_coordinates.txt");
             }
 
             // Compute distances between the ML trees (used to add the distances on the scatter plot).

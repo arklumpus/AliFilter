@@ -1,0 +1,9 @@
+Alignment	Columns	Distinct patterns	Parsimony-informative
+simulated	120214	102234	63316
+raw	117218	100104	63270
+alifilter	45200	45196	44299
+bmge	36951	36947	36052
+clipkit	81247	80363	62227
+gblocks	26660	26656	25803
+noisy	69510	68298	59856
+trimal	37542	37506	36055

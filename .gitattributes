@@ -2,3 +2,4 @@ Datasets export-ignore
 Figures export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
+Figures/Figure_S11/Data/Trees/*.ufboot filter=lfs diff=lfs merge=lfs -text

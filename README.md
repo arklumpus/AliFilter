@@ -46,9 +46,10 @@ AliFilter can also perform additional tasks, including training new models, comp
 
 If you use AliFilter in your research, please cite it as:
 
-> Bianchini, G., Zhu, R., Cicconardi, F., & Moody, E. R. R. (2025). \
+> Bianchini, G., Zhu, R., Cicconardi, F., & Moody, E. R. R. (2026). \
 > **AliFilter: a machine learning approach to alignment filtering.** \
-> Zenodo. https://doi.org/10.5281/zenodo.14861812
+> Molecular Biology and Evolution, 43(4), msag097. \
+> [https://doi.org/10.1093/molbev/msag097](https://doi.org/10.1093/molbev/msag097)
 
 ## Building from source
 
